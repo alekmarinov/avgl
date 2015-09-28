@@ -1,0 +1,5 @@
+# example/player/CMakeLists.txt
+
+IF(WITH_DIRECTFB OR WITH_SDL)
+	ADD_EXECUTABLE(player player.c)
+ENDIF(WITH_DIRECTFB OR WITH_SDL)

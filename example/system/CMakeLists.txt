@@ -1,0 +1,5 @@
+# example/system/CMakeLists.txt
+
+IF(WITH_DIRECTFB OR WITH_SDL)
+	ADD_EXECUTABLE(system system.c)
+ENDIF(WITH_DIRECTFB OR WITH_SDL)

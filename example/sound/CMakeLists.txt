@@ -1,0 +1,5 @@
+# example/sound/CMakeLists.txt
+
+IF(WITH_DIRECTFB OR WITH_SDL)
+	ADD_EXECUTABLE(sound sound.c)
+ENDIF(WITH_DIRECTFB OR WITH_SDL)

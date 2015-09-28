@@ -1,0 +1,73 @@
+-- AVGL --
+
+-- Linux Install Instructions --
+--------------------------------
+
+	-- General Locations --
+
+export INSTALL_ROOT=/usr/local
+export SOURCE_ROOT=$HOME/svn
+
+	-- Setup Prerequisites --
+
+-- Fedora Core 7
+-- setup ATrpms repository (http://atrpms.net/install.html)
+rpm --import http://ATrpms.net/RPM-GPG-KEY.atrpms
+----------/etc/yum.repos.d/atrpms.repo----------------
+[atrpms]
+name=Fedora Core $releasever - $basearch - ATrpms
+baseurl=http://dl.atrpms.net/f$releasever-$basearch/atrpms/stable
+enabled=1
+gpgcheck=1
+------------------------------------------------------
+
+-- install packages
+yum install cmake lua-devel directfb-devel cairo-devel SDL-devel ffmpeg-devel
+
+-- Ubuntu 
+Start GUI program "Synaptic Package Manager"
+Select packages: liblua5.1-0-dev, libdirectfb-dev, libcairo2-dev, libavcodec-dev, libavformat-dev, libavutil-dev, libpostproc-dev, libswscale-dev, libsdl1.2-dev
+Tools: cmake, g++, subversion
+Press Apply/Install button
+-- <-- Ubuntu
+
+	-- SVN Instructions --
+mkdir $SOURCE_ROOT
+cd $SOURCE_ROOT
+svn co svn://bg.aviq.com/repos/aviq
+
+	-- Build Instructions --
+
+cd $SOURCE_ROOT/aviq/lib/avgl/trunk
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
+/sbin/ldonfig
+
+	-- Environment Setup  --
+
+-- development 
+export LUA_PATH="$SOURCE_ROOT/aviq/extern/lib/lua/?.lua;$SOURCE_ROOT/aviq/lib/avgl/trunk/src/scripting/lua/scripts/?.lua"
+
+-- production
+export LUA_PATH="$INSTALL_ROOT/share/lua/?.lua;$INSTALL_ROOT/share/avgl/lua/?.lua"
+
+		-- Test --
+
+	-- GUI Definition Language
+$INSTALL_ROOT/share/avgl/examples/scripting $INSTALL_ROOT/share/avgl/examples/gdltest.lua
+
+	-- Multimedia Playback
+
+-- AVGL/FFMPEG player
+$INSTALL_ROOT/share/avgl/examples/avplayer <media>
+
+-- with AVGL/FFPlay player
+$INSTALL_ROOT/share/avgl/examples/avplayerffplay <media>
+
+	-- Packaging
+# assumming rockspec is locatated in the current directory and 
+# the public luarock repository in /var/www/html/rocks
+sudo luadeploy deploy `pwd` /var/www/html/rocks
