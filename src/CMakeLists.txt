@@ -26,7 +26,7 @@ SET(${PROJECT_NAME}_SOURCES
 	sound/av_sound_wave.c
 )
 
-SET(${PROJECT_NAME}_LIBRARIES m rt)
+SET(${PROJECT_NAME}_LIBRARIES m)
 
 IF(WITH_PTHREADS)
 	SET(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} pthread)
@@ -63,30 +63,29 @@ IF(WITH_VLC)
 	SET(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} vlc)
 ENDIF(WITH_VLC)
 
-IF(WITH_SDL)
-	FIND_LIBRARY(SDL_LIB SDL)
-	IF(SDL_LIB)
-		SET(${PROJECT_NAME}_SOURCES
-			${${PROJECT_NAME}_SOURCES}
-			audio/av_audio_sdl.c
-			video/av_video_sdl.c
-			video/av_video_cursor_sdl.c
-			video/av_video_surface_sdl.c
-			video/av_video_surface_overlay_sdl.c
-			video/av_video_surface_overlay_buffered_sdl.c
-			input/av_input_sdl.c
-			system/av_system_sdl.h
-			system/av_system_sdl.c
-			system/av_system_sdl_param.c
-			timer/av_timer_sdl.c
-		)
-		SET(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} SDL Xv Xext)
-		FIND_LIBRARY(SDLNET_LIB SDL_net)
-		IF(SDLNET_LIB)
-			SET(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} SDL_net)
-		ENDIF(SDLNET_LIB)
-	ENDIF(SDL_LIB)
-ENDIF(WITH_SDL)
+INCLUDE(FindSDL)
+IF(WITH_SDL AND SDL_FOUND)
+	SET(${PROJECT_NAME}_SOURCES
+		${${PROJECT_NAME}_SOURCES}
+		audio/av_audio_sdl.c
+		video/av_video_sdl.c
+		video/av_video_cursor_sdl.c
+		video/av_video_surface_sdl.c
+		video/av_video_surface_overlay_sdl.c
+		video/av_video_surface_overlay_buffered_sdl.c
+		input/av_input_sdl.c
+		system/av_system_sdl.h
+		system/av_system_sdl.c
+		system/av_system_sdl_param.c
+		timer/av_timer_sdl.c
+	)
+	SET(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} ${SDL_LIBRARY})
+
+	INCLUDE(FindSDL_net)
+	IF (SDL_NET_FOUND)
+		SET(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} ${SDL_NET_LIBRARIES})
+	ENDIF (SDL_NET_FOUND)
+ENDIF(WITH_SDL AND SDL_FOUND)
 
 IF(WITH_DIRECTFB)
 	SET(${PROJECT_NAME}_SOURCES
@@ -115,25 +114,23 @@ IF(WITH_CAIRO)
 		/usr/lib
 	)
 
-	SET(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} ${LIB_CAIRO})
+	find_path(CAIRO_INCLUDE_DIR cairo.h
+		HINTS
+			ENV CAIRODIR
+		PATH_SUFFIXES include/cairo include
+	)
+
+	SET(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} ${LIB_CAIRO} "-L${CMAKE_INSTALL_PREFIX}/lib -lpixman-1" "-lfreetype -lz -lpng")
 ENDIF(WITH_CAIRO)
 
 INCLUDE_DIRECTORIES(
-	/usr/aviq/include
 	${${PROJECT_NAME}_SOURCE_DIR}/include
-	/usr/local/include
+	${CAIRO_INCLUDE_DIR}
+	${SDL_INCLUDE_DIR}
 	/usr/include
-	/usr/local/include/SDL
-	/usr/include/SDL
-	/usr/local/include/directfb
-	/usr/include/directfb
-	/usr/local/include/cairo
-	/usr/include/cairo
-	/usr/local/include/ffmpeg
-	/usr/include/ffmpeg
+	/usr/local/include
 )
 
 LINK_LIBRARIES(${${PROJECT_NAME}_LIBRARIES})
 ADD_LIBRARY(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES})
 INSTALL_TARGETS(/lib ${PROJECT_NAME})
-

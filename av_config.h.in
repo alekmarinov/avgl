@@ -10,7 +10,7 @@
 #ifndef __AV_CONFIG_H
 #define __AV_CONFIG_H
 
-#define AV_CONFIG_INSTALL_PREFERENCES "/etc/avgl.prefs"
+#define AV_CONFIG_INSTALL_PREFERENCES "${AV_INSTALL_PREFERENCES}"
 #define AV_CONFIG_USER_PREFERENCES ".avgl.prefs"
 
 #endif

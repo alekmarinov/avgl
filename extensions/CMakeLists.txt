@@ -1,3 +1,3 @@
 # extensions/CMakeLists.txt
 
-SUBDIRS(xembed)
+# SUBDIRS(xembed)
