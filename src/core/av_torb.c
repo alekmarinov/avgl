@@ -12,7 +12,12 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
-#include <strings.h>
+
+#ifdef _WIN32
+#  define strcasecmp _stricmp
+#else
+#  include <strings.h>
+#endif
 #include <av_torb.h>
 #include <av_list.h>
 #include <av_hash.h>
@@ -24,10 +29,12 @@
 
 #ifdef WITH_SYSTEM_SDL
 int av_system_sdl_register_torba(void);
+static const char* _systembackend = "sdl";
 #endif
 
 #ifdef WITH_SYSTEM_DIRECTFB
 int av_system_dfb_register_torba(void);
+static const char* _systembackend = "dfb";
 #endif
 
 #ifdef WITH_GRAPHICS_CAIRO
@@ -41,10 +48,8 @@ static int _logfileenable            = 0;
 static const char* _logfilename      = "avgl.log";
 static const char* _logfileverbosity = "debug";
 static int _logconenable             = 1;
-static const char* _logconverbosity  = "info";
+static const char* _logconverbosity  = "debug";
 
-/* default system preferences */
-static const char* _systembackend    = "sdl";
 
 /* class descriptor */
 typedef struct _av_class_tree_t
@@ -296,21 +301,26 @@ static av_result_t av_torb_setup_log(void)
 	int islogfile;
 
 	_prefs->get_int(_prefs, "log.console.enabled", _logconenable, &islogconsole);
+	_prefs->set_int(_prefs, "log.console.enabled", islogconsole);
 	if (islogconsole)
 	{
 		const char* logconverbosity;
 		_prefs->get_string(_prefs, "log.console.verbosity", _logconverbosity, &logconverbosity);
-		_log->add_console_logger(_log, av_torb_parse_verbosity(logconverbosity, LOG_VERBOSITY_INFO),
+		_prefs->set_string(_prefs, "log.console.verbosity", logconverbosity);
+		_log->add_console_logger(_log, av_torb_parse_verbosity(logconverbosity, LOG_VERBOSITY_DEBUG),
 								 "console");
 	}
 
 	_prefs->get_int(_prefs, "log.file.enabled", _logfileenable, &islogfile);
+	_prefs->set_int(_prefs, "log.file.enabled", islogfile);
 	if (islogfile)
 	{
 		const char* logfilename;
 		const char* logfileverbosity;
 		_prefs->get_string(_prefs, "log.file.name", _logfilename, &logfilename);
+		_prefs->set_string(_prefs, "log.file.name", logfilename);
 		_prefs->get_string(_prefs, "log.file.verbosity", _logfileverbosity, &logfileverbosity);
+		_prefs->set_string(_prefs, "log.file.verbosity", logfileverbosity);
 		_log->add_file_logger(_log, av_torb_parse_verbosity(logfileverbosity, LOG_VERBOSITY_DEBUG),
 							  "file", logfilename);
 	}
@@ -324,8 +334,9 @@ static av_result_t av_torb_setup_system(void)
 	const char* systembackend;
 	char system_class_name[MAX_NAME_SIZE];
 	_prefs->get_string(_prefs, "system.backend", _systembackend, &systembackend);
+	_prefs->set_string(_prefs, "system.backend", systembackend);
 
-	strcpy(system_class_name, "system_");
+	strncpy(system_class_name, "system_", MAX_NAME_SIZE);
 	strncat(system_class_name, systembackend, MAX_NAME_SIZE-7);
 
 	if (AV_OK != (rc = av_torb_create_object(system_class_name, (av_object_p*)&_system)))
@@ -382,13 +393,13 @@ av_result_t av_torb_init()
 		}
 
 		/* creates object class */
-		objectclass = (av_class_tree_p)malloc(sizeof(av_class_tree_t));
+		objectclass = (av_class_tree_p)calloc(1, sizeof(av_class_tree_t));
 		if (!objectclass)
 		{
 			av_torb_done();
 			return AV_EMEM;
 		}
-		strcpy(objectclass->classname, superclassname);
+		strncpy(objectclass->classname, superclassname, MAX_NAME_SIZE);
 
 		objectclass->parent        = AV_NULL;
 		objectclass->constructor   = av_object_constructor;
@@ -650,7 +661,7 @@ av_result_t av_torb_create_object(const char* classname, av_object_p* ppobject)
 	if (AV_NULL == classref)
 		return AV_EFOUND;
 
-	self = (av_object_p)malloc(classref->classsize);
+	self = (av_object_p)calloc(1, classref->classsize);
 	if (!self)
 		return AV_EMEM;
 

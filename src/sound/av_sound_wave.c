@@ -122,12 +122,13 @@ av_bool_t av_sound_format_open_wave(const char* filename, struct av_sound_handle
 		goto exit_err_1;
 	}
 
-	if (wav.wFormatTag!=1)
+	/*
+	if (wav.wFormatTag != 1)
 	{
-		/* bad wav wFormatTag */
 		rc = AV_FALSE;
 		goto exit_err_1;
 	}
+*/
 
 	if ((wav.nBitsPerSample != 16) && (wav.nBitsPerSample != 8) )
 	{

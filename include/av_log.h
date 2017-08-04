@@ -109,7 +109,7 @@ typedef struct av_log
 	/*!
 	* \brief Sets a verbosity level to a logger given by name
 	* \param self is a reference to this object
-	* \param name of the logger used when the logger has been added
+	* \param name of the logger or null to set the same verbosity on all loggers
 	* \param verbosity is the new verbosity logging level
 	* \return av_result_t
 	*         - AV_OK on success

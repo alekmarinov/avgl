@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <av_torb.h>
 #include <av_log.h>
 #include <av_system.h>
@@ -52,13 +51,16 @@ int main( void )
 	av_rect_t rect;
 	int pitch;
 
-	video_config.flags = AV_VIDEO_CONFIG_MODE | AV_VIDEO_CONFIG_SIZE;
 	video_config.mode = AV_VIDEO_MODE_WINDOWED;
 	video_config.width = XRES;
 	video_config.height = YRES;
+	video_config.bpp = 0;
 
-	av_check("av_torb_init",                     err_torba_init,      av_torb_init())
-	av_check("av_torb_service_addref",           err_log_ref,         av_torb_service_addref("log", (av_service_p*)&_log))
+	av_check("av_torb_init", err_torba_init, av_torb_init())
+
+	av_check("av_torb_service_addref", err_log_ref, av_torb_service_addref("log", (av_service_p*)&_log))
+	_log->set_verbosity(_log, NULL, LOG_VERBOSITY_DEBUG);
+
 	av_check("av_torb_service_addref",           err_system_register, av_torb_service_addref("system", (av_service_p*)&sys))
 	av_check("system->get_video",                err_system_register, sys->get_video(sys, &video))
 	av_check("system->get_timer",                err_system_register, sys->get_timer(sys, &timer))
@@ -95,7 +97,7 @@ int main( void )
 err_graphics_surface:
 	/* destroying graphics surface flush the painting over the target surface */
 	O_destroy(graphics_surface);
-	timer->sleep(2);
+	timer->sleep(5);
 err_graphics:
 	O_destroy(graphics);
 err_video_mode:

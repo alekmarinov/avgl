@@ -8,8 +8,6 @@
 /*                                                                   */
 /*********************************************************************/
 
-#define _XOPEN_SOURCE 500
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -250,6 +248,11 @@ int main(int nargs, char* argv[])
 	}
 
 	if (AV_OK != (rc = sys->get_audio(sys, &audio)))
+	{
+		goto err_exit;
+	}
+
+	if (AV_OK != (rc = audio->enable(audio)))
 	{
 		goto err_exit;
 	}

@@ -25,7 +25,7 @@ extern "C" {
 /*!
 * \brief Single pixel type
 */
-typedef unsigned long av_pixel_t, *av_pixel_p;
+typedef unsigned int av_pixel_t, *av_pixel_p;
 
 /*!
 * \brief Single byte of a pixel for planar formats and overlay access

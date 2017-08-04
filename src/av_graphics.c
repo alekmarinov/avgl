@@ -441,13 +441,16 @@ static void graphics_prefs_observer(void* param, const char* name, av_prefs_valu
 	{
 		int xres, yres;
 		int xbase, ybase;
-		prefs->get_int(prefs, "system.video.xres", 0, &xres);
-		prefs->get_int(prefs, "system.video.yres", 0, &yres);
-		prefs->get_int(prefs, "graphics.xbase", 0, &xbase);
-		prefs->get_int(prefs, "graphics.ybase", 0, &ybase);
-		av_torb_service_release("prefs");
-		self->scale_x = (double)xres / xbase;
-		self->scale_y = (double)yres / ybase;
+		prefs->get_int(prefs, "system.video.xres", -1, &xres);
+		prefs->get_int(prefs, "system.video.yres", -1, &yres);
+		if (xres > 0 && yres > 0)
+		{
+			prefs->get_int(prefs, "graphics.xbase", xres, &xbase);
+			prefs->get_int(prefs, "graphics.ybase", yres, &ybase);
+			av_torb_service_release("prefs");
+			self->scale_x = (double)xres / xbase;
+			self->scale_y = (double)yres / ybase;
+		}
 	}
 }
 
@@ -470,6 +473,8 @@ static av_result_t av_graphics_constructor(av_object_p pobject)
 	av_result_t rc;
 	av_prefs_p prefs;
 	av_graphics_p self        = (av_graphics_p)pobject;
+
+	self->scale_x = self->scale_y = 1.0f;
 
 	self->graphics_surface    = AV_NULL;
 	self->create_surface      = av_graphics_create_surface;
@@ -515,6 +520,7 @@ static av_result_t av_graphics_constructor(av_object_p pobject)
 	{
 		return rc;
 	}
+
 	prefs->register_observer(prefs, "graphics.xbase", graphics_prefs_observer, self);
 	prefs->register_observer(prefs, "graphics.ybase", graphics_prefs_observer, self);
 	prefs->register_observer(prefs, "system.video.xres", graphics_prefs_observer, self);

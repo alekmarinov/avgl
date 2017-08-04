@@ -176,9 +176,9 @@ static av_result_t av_video_overlay_sdl_set_size_format(struct av_video_overlay*
 		if (!ctx->surface)
 		{
 			if (AV_NULL == (ctx->surface = SDL_CreateRGBSurface(SDL_SWSURFACE,
-																width, height, SDL_SURFACE_BPP,
-																SDL_SURFACE_MASK_RED, SDL_SURFACE_MASK_GREEN,
-																SDL_SURFACE_MASK_BLUE, 0)))
+																width, height, SDL_MEM_SURFACE_BPP,
+																SDL_MEM_SURFACE_MASK_RED, SDL_MEM_SURFACE_MASK_GREEN,
+																SDL_MEM_SURFACE_MASK_BLUE, 0)))
 			{
 				ctx->mtx->unlock(ctx->mtx);
 				return AV_EMEM;
@@ -229,10 +229,10 @@ static av_result_t av_video_overlay_sdl_set_size_back(struct av_video_overlay* s
 			ctx->surface = AV_NULL;
 		}
 
-		if (AV_NULL == (ctx->surface = SDL_CreateRGBSurface(SDL_SURFACE_TYPE,
-															back_width, back_height, SDL_SURFACE_BPP,
-															SDL_SURFACE_MASK_RED, SDL_SURFACE_MASK_GREEN,
-															SDL_SURFACE_MASK_BLUE, 0)))
+		if (AV_NULL == (ctx->surface = SDL_CreateRGBSurface(SDL_SWSURFACE,
+															back_width, back_height, SDL_MEM_SURFACE_BPP,
+															SDL_MEM_SURFACE_MASK_RED, SDL_MEM_SURFACE_MASK_GREEN,
+															SDL_MEM_SURFACE_MASK_BLUE, 0)))
 		{
 			ctx->mtx->unlock(ctx->mtx);
 			return AV_EMEM;

@@ -12,9 +12,18 @@
 /* SDL video backend implementation */
 
 #include <av_video.h>
+#include <av_prefs.h>
 
 #include "av_video_sdl.h"
 #include "av_video_cursor_sdl.h"
+
+#ifdef WITH_X11
+# include <X11/X.h>
+# include <X11/Xlib.h>
+# include <X11/Xutil.h>
+# include <X11/keysym.h>
+# include <X11/extensions/Xvlib.h>
+#endif
 
 #define O_context(o) O_attr(o, CONTEXT_SDL_SURFACE)
 
@@ -30,7 +39,6 @@ av_result_t av_video_surface_sdl_register_torba(void);
 /* import video_surface_sdl constructor */
 av_result_t av_video_surface_sdl_constructor(av_object_p object);
 
-
 #define av_sdl_error_check(funcname, rc) av_sdl_error_process(rc, funcname, __FILE__, __LINE__)
 
 /* Cleans up SDL objects */
@@ -45,9 +53,11 @@ static void av_video_sdl_clean_up(av_video_sdl_p self)
 
 static av_result_t av_video_sdl_set_size(av_surface_p pvideo, int width, int height)
 {
+	av_result_t rc;
 	av_video_p self = (av_video_p)pvideo;
 	av_video_config_t video_config;
-	video_config.flags = AV_VIDEO_CONFIG_SIZE;
+	if (AV_OK != (rc = self->get_configuration(self, &video_config)))
+		return rc;
 	video_config.width = width;
 	video_config.height = height;
 	return self->set_configuration(self, &video_config);
@@ -58,7 +68,6 @@ static av_result_t av_video_sdl_get_size(av_surface_p pvideo, int* pwidth, int* 
 	av_result_t rc;
 	av_video_config_t video_config;
 	av_video_p self = (av_video_p)pvideo;
-	video_config.flags = AV_VIDEO_CONFIG_SIZE;
 	if (AV_OK != (rc = self->get_configuration(self, &video_config)))
 		return rc;
 	*pwidth = video_config.width;
@@ -67,17 +76,9 @@ static av_result_t av_video_sdl_get_size(av_surface_p pvideo, int* pwidth, int* 
 }
 
 /* compares two video configurations, and returns AV_TRUE if they are equal, AV_FALSE otherwise */
-static av_bool_t av_video_sdl_compare_configuration(av_video_config_flags_t flags, av_video_config_p config1, av_video_config_p config2)
+static av_bool_t av_video_sdl_compare_configuration(av_video_config_p config1, av_video_config_p config2)
 {
-	if (flags & AV_VIDEO_CONFIG_MODE)
-		if (config1->mode != config2->mode)
-			return AV_FALSE;
-
-	if (flags & AV_VIDEO_CONFIG_SIZE)
-		if (config1->width != config2->width || config1->height != config2->height)
-			return AV_FALSE;
-
-	return AV_TRUE;
+	return config1->mode == config2->mode && config1->width == config2->width && config1->height == config2->height;
 }
 
 static av_result_t av_video_sdl_enum_video_modes(av_video_p pvideo, video_mode_callback_t vmcbk)
@@ -114,57 +115,48 @@ static av_result_t av_video_sdl_enum_video_modes(av_video_p pvideo, video_mode_c
 */
 static av_result_t av_video_sdl_set_configuration(av_video_p pvideo, av_video_config_p new_video_config)
 {
+	av_result_t rc;
 	int bpp;
 	av_video_sdl_p self = (av_video_sdl_p)pvideo;
-	Uint32 sdlflags = SDL_SURFACE_TYPE | /*SDL_ASYNCBLIT |*/ SDL_HWACCEL;
+	Uint32 sdlflags = 0;
 	SDL_Surface *surface;
 	av_video_config_t video_config;
 
-	if (new_video_config->flags & AV_VIDEO_CONFIG_BPP)
-	{
-		/* changing bpp is not allowed */
-		return AV_EPERM;
-	}
+	if (AV_OK != (rc = pvideo->get_configuration(pvideo, &video_config)))
+		return rc;
 
-	sdlflags |= (is_sdl_double_buffer()? SDL_DOUBLEBUF : 0);
-
-	/* gets previous video mode settings */
-	video_config.flags = new_video_config->flags;
-	pvideo->get_configuration(pvideo, &video_config);
-
-	if (av_video_sdl_compare_configuration(video_config.flags, &video_config, new_video_config))
+	if (av_video_sdl_compare_configuration(&video_config, new_video_config))
 		return AV_OK; /* nothing to configure */
 
-	video_config.flags |= AV_VIDEO_CONFIG_MODE | AV_VIDEO_CONFIG_SIZE;
-	pvideo->get_configuration(pvideo, &video_config);
-
-	/* apply only the changed mode settings */
-
 	/* video mode */
-	if (new_video_config->flags & AV_VIDEO_CONFIG_MODE)
-		video_config.mode = new_video_config->mode;
+	video_config.mode = new_video_config->mode;
+
+	if (video_config.mode & AV_VIDEO_MODE_FULLSCREEN)
+		sdlflags |= SDL_FULLSCREEN;
+
+	if (video_config.mode & AV_VIDEO_MODE_HW_ACCEL)
+		sdlflags |= SDL_HWACCEL | SDL_HWSURFACE;
+
+	if (video_config.mode & AV_VIDEO_MODE_DOUBLE_BUFFER)
+		sdlflags |= SDL_DOUBLEBUF;
 
 	/* video resolution */
-	if (new_video_config->flags & AV_VIDEO_CONFIG_SIZE)
-	{
-		video_config.width = new_video_config->width;
-		video_config.height = new_video_config->height;
-	}
+	video_config.width = new_video_config->width;
+	video_config.height = new_video_config->height;
+	video_config.bpp = new_video_config->bpp;
 
 	av_video_sdl_clean_up(self);
 
-	if (video_config.mode & AV_VIDEO_MODE_FULLSCREEN)
-	{
-		sdlflags |= SDL_FULLSCREEN;
-	}
-
-	if (0 == (bpp = SDL_VideoModeOK(video_config.width, video_config.height, SDL_SURFACE_BPP, sdlflags)))
+	if (0 == (bpp = SDL_VideoModeOK(video_config.width, video_config.height, 32, sdlflags)))
 	{
 		av_video_sdl_clean_up(self);
 		return AV_ESUPPORTED;
 	}
 
-	surface = SDL_SetVideoMode(video_config.width, video_config.height, bpp, sdlflags);
+	if (video_config.bpp == 0)
+		video_config.bpp = bpp;
+
+	surface = SDL_SetVideoMode(video_config.width, video_config.height, video_config.bpp, sdlflags);
 	if (!surface)
 	{
 		av_video_sdl_clean_up(self);
@@ -186,46 +178,23 @@ static av_result_t av_video_sdl_get_configuration(av_video_p pvideo, av_video_co
 
 	if (primary_surface)
 	{
-		if (video_config->flags & AV_VIDEO_CONFIG_SIZE)
-		{
-			video_config->width = primary_surface->w;
-			video_config->height = primary_surface->h;
-		}
-
-		if (video_config->flags & AV_VIDEO_CONFIG_BPP)
-		{
-			video_config->bpp = primary_surface->format->BitsPerPixel;
-		}
-
-		if (video_config->flags & AV_VIDEO_CONFIG_MODE)
-		{
-			if (primary_surface->flags & SDL_FULLSCREEN)
-			{
-				video_config->mode = AV_VIDEO_MODE_FULLSCREEN;
-			}
-			else
-			{
-				video_config->mode = AV_VIDEO_MODE_WINDOWED;
-			}
-		}
+		video_config->width = primary_surface->w;
+		video_config->height = primary_surface->h;
+		video_config->bpp = primary_surface->format->BitsPerPixel;
+		video_config->mode = 0;
+		if (primary_surface->flags & SDL_FULLSCREEN)
+			video_config->mode |= AV_VIDEO_MODE_FULLSCREEN;
+		if (primary_surface->flags & SDL_DOUBLEBUF)
+			video_config->mode |= AV_VIDEO_MODE_DOUBLE_BUFFER;
+		if (primary_surface->flags & SDL_HWACCEL)
+			video_config->mode |= AV_VIDEO_MODE_HW_ACCEL;
 	}
 	else
 	{
-		if (video_config->flags & AV_VIDEO_CONFIG_SIZE)
-		{
-			video_config->width = 0;
-			video_config->height = 0;
-		}
-
-		if (video_config->flags & AV_VIDEO_CONFIG_BPP)
-		{
-			video_config->bpp = 0;
-		}
-
-		if (video_config->flags & AV_VIDEO_CONFIG_MODE)
-		{
-			video_config->mode = AV_VIDEO_MODE_WINDOWED;
-		}
+		video_config->width = 0;
+		video_config->height = 0;
+		video_config->bpp = 0;
+		video_config->mode = 0;
 	}
 	return AV_OK;
 }
@@ -241,7 +210,7 @@ static av_result_t av_video_sdl_create_surface(av_video_p self, int width, int h
 
 	/* set_size will expect a reference to the video owner object */
 	surface->video = self;
-	if (0<width && 0<height)
+	if (0 < width && 0 < height)
 	{
 		if (AV_OK != (rc = ((av_surface_p)surface)->set_size((av_surface_p)surface, width, height)))
 		{
@@ -278,9 +247,8 @@ static av_result_t av_video_sdl_create_surface_from(av_video_p self, void* ptr, 
 	}
 
 	/* creates 32bit SDL surface */
-	if (AV_NULL == (sdl_surface = SDL_CreateRGBSurfaceFrom(ptr, width, height, SDL_SURFACE_BPP, pitch,
-														   SDL_SURFACE_MASK_RED, SDL_SURFACE_MASK_GREEN,
-														   SDL_SURFACE_MASK_BLUE, 0)))
+	if (AV_NULL == (sdl_surface = SDL_CreateRGBSurfaceFrom(ptr, width, height, SDL_MEM_SURFACE_BPP, pitch,
+														   SDL_MEM_SURFACE_MASK_RED, SDL_MEM_SURFACE_MASK_GREEN, SDL_MEM_SURFACE_MASK_BLUE, 0)))
 	{
 		O_destroy(surface);
 		return AV_EMEM;
@@ -300,9 +268,15 @@ static av_result_t av_video_sdl_get_backbuffer(av_video_p self, av_video_surface
 
 static av_result_t av_video_sdl_update(av_video_p self, av_rect_p rect)
 {
+	av_result_t rc;
 	SDL_Surface *surface = (SDL_Surface *)O_context(self);
+	av_video_config_t video_config;
 	av_assert(surface, "Video surface is not initialized properly");
-	if (is_sdl_double_buffer())
+
+	if (AV_OK != (rc = self->get_configuration(self, &video_config)))
+		return rc;
+
+	if (video_config.mode & AV_VIDEO_MODE_DOUBLE_BUFFER)
 	{
 		SDL_Flip(surface);
 	}
@@ -402,8 +376,86 @@ static av_result_t av_video_sdl_get_root_window(struct av_video* self, void** pd
 static av_result_t av_video_sdl_get_color_key(struct av_video* self, av_pixel_t* pcolorkey)
 {
 	AV_UNUSED(self);
-	*pcolorkey = color_key();
-	return AV_OK;
+#ifdef WITH_X11
+	Display* dpy;
+	XvAdaptorInfo *adaptor_info;
+	unsigned int n, num_adaptors = 0;
+	unsigned int xv_version, xv_release;
+	unsigned int xv_request_base, xv_event_base, xv_error_base;
+
+	if (NULL == (dpy = XOpenDisplay(NULL)))
+	{
+		return AV_EGENERAL; /* Couldn't open display */
+	}
+
+	if (XvQueryExtension
+	(
+		dpy,
+		&xv_version,
+		&xv_release,
+		&xv_request_base,
+		&xv_event_base,
+		&xv_error_base
+	) != Success)
+	{
+		XCloseDisplay(dpy);
+		return AV_EGENERAL; /* Xv not found */
+	}
+
+	if (Success == XvQueryAdaptors(
+		dpy,
+		DefaultRootWindow(dpy),
+		&num_adaptors,
+		&adaptor_info))
+	{
+		for (n = 0; n < num_adaptors; n++)
+		{
+			int port;
+			int base_id;
+			int num_ports;
+
+			base_id = adaptor_info[n].base_id;
+			num_ports = adaptor_info[n].num_ports;
+
+			for (port = base_id; port < base_id + num_ports; port++)
+			{
+				int k;
+				int num;
+				XvAttribute *xvattr;
+
+				xvattr = XvQueryPortAttributes(dpy, port, &num);
+				for (k = 0; k < num; k++)
+				{
+					Atom val_atom;
+					int cur_val = 0;
+					val_atom = XInternAtom(dpy, xvattr[k].name, False);
+					if (xvattr[k].flags & XvGettable)
+					{
+						XvGetPortAttribute(
+							dpy,
+							port,
+							val_atom,
+							&cur_val);
+					}
+
+					if (!strcmp(xvattr[k].name, "XV_COLORKEY"))
+					{
+						*pcolorkey = (unsigned int)cur_val;
+						return AV_OK;
+					}
+				}
+				if (xvattr)
+					XFree(xvattr);
+			}
+		}
+		if (adaptor_info)
+			XvFreeAdaptorInfo(adaptor_info);
+	}
+	XCloseDisplay(dpy);
+	return AV_EGENERAL;
+#else
+	return AV_ESTATE;
+#endif
 }
 
 static void av_video_sdl_destructor(void* pvideo)

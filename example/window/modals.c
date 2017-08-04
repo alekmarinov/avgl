@@ -8,7 +8,6 @@
 /*                                                                   */
 /*********************************************************************/
 
-#include <unistd.h>
 #include <stdlib.h>
 #include <av_system.h>
 #include <av_window.h>
@@ -27,7 +26,9 @@ static av_bool_t on_paint(av_window_p self, av_graphics_p graphics)
 	int r, g, b;
 	long addr=(long)self;
 	av_rect_t rect;
+
 	self->get_rect(self, &rect);
+	printf("on_paint %d %d %d %d\n", rect.x, rect.y, rect.w, rect.h);
 	rect.x = rect.y = 0;
 	graphics->rectangle(graphics, &rect);
 	addr = (addr & 0xFFFF) ^ ((addr >> 16) & 0xFFFF);
@@ -43,6 +44,7 @@ static av_bool_t on_mouse_button_down(av_window_p self, av_event_mouse_button_t 
 {
 	AV_UNUSED(x);
 	AV_UNUSED(y);
+	printf("on_mouse_button_down: button = %d\n", button);
 	if (AV_MOUSE_BUTTON_LEFT == button )
 	{
 		sys->modal_exit(sys, self, 1);
@@ -59,10 +61,16 @@ static av_bool_t on_mouse_button_down(av_window_p self, av_event_mouse_button_t 
 static void create_window(void)
 {
 	/* creates test window */
-	sys->create_window(sys, AV_NULL, AV_NULL, &window);
+	av_rect_t rect;
+	rect.x = 10;
+	rect.y = 10;
+	rect.w = 100;
+	rect.h = 100;
+	sys->create_window(sys, AV_NULL, &rect, &window);
 	window->on_paint            = on_paint;
 	window->on_mouse_button_down  = on_mouse_button_down;
-	window->set_visible(window, AV_FALSE);
+	window->update(window, AV_UPDATE_REPAINT);
+	// window->set_visible(window, AV_FALSE);
 
 }
 
@@ -72,6 +80,7 @@ static av_bool_t root_on_mouse_button_down(av_window_p self, av_event_mouse_butt
 	AV_UNUSED(x);
 	AV_UNUSED(y);
 	AV_UNUSED(self);
+	printf("root_on_mouse_button_down: button = %d\n", button);
 	if (AV_MOUSE_BUTTON_LEFT == button )
 	{
 		O_destroy(window);

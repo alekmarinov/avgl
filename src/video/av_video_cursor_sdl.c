@@ -10,6 +10,12 @@
 
 #ifdef WITH_SYSTEM_SDL
 
+#ifdef _WIN32
+#  define strcasecmp _stricmp
+#else
+#  include <strings.h>
+#endif
+
 #include <SDL.h>
 #include "av_video_sdl.h"
 #include "av_video_cursor_sdl.h"
@@ -21,7 +27,6 @@
 #include "cursor/keyboard.xpm"
 #include "cursor/scroll.xpm"
 #include "cursor/zoom.xpm"
-
 
 static int initialized = 0;
 static SDL_Cursor* cursors[AV_VIDEO_CURSOR_LAST];

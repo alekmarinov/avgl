@@ -18,14 +18,11 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
-/** NOTE:
-* should we use SDL_HWSURFACE or SDL_SWSURFACE ??? */
-#define SDL_SURFACE_TYPE SDL_HWSURFACE
-#define SDL_SURFACE_BPP 32
-#define SDL_SURFACE_MASK_ALPHA 0xff000000
-#define SDL_SURFACE_MASK_RED   0x00ff0000
-#define SDL_SURFACE_MASK_GREEN 0x0000ff00
-#define SDL_SURFACE_MASK_BLUE  0x000000ff
+#define SDL_MEM_SURFACE_BPP 32
+#define SDL_MEM_SURFACE_MASK_ALPHA 0xff000000
+#define SDL_MEM_SURFACE_MASK_RED   0x00ff0000
+#define SDL_MEM_SURFACE_MASK_GREEN 0x0000ff00
+#define SDL_MEM_SURFACE_MASK_BLUE  0x000000ff
 
 #define CONTEXT_SDL_SURFACE "video_surface_sdl_ctx"
 #define CONTEXT_SDL_OVERLAY "video_overlay_sdl_ctx"
@@ -64,9 +61,6 @@ typedef struct av_video_overlay_sdl
 	av_mutex_p mtx;
 
 } av_video_overlay_sdl_t, *av_video_overlay_sdl_p;
-
-av_pixel_t color_key(void);
-av_bool_t is_sdl_double_buffer(void);
 
 av_result_t av_video_surface_sdl_create_overlay(av_video_surface_p psurface, av_video_overlay_p* ppoverlay);
 av_result_t av_video_surface_sdl_create_overlay_buffered(av_video_surface_p psurface, av_video_overlay_p* ppoverlay);

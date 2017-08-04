@@ -148,9 +148,6 @@ static av_result_t av_system_sdl_constructor(av_object_p object)
 	if (AV_OK != (rc = av_torb_service_addref("log", (av_service_p*)&_log)))
 		return rc;
 
-	/* Setup environment variables for proper SDL functionality */
-	av_system_sdl_setup_param();
-
 	/* Initializes SDL library without catching any fatal signals */
 	sdl_flags = SDL_INIT_NOPARACHUTE | SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO;
 

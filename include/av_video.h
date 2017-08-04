@@ -304,32 +304,10 @@ typedef struct av_video_overlay
 typedef enum
 {
 	AV_VIDEO_MODE_WINDOWED   = 0,
-	AV_VIDEO_MODE_FULLSCREEN = (1<<0)
+	AV_VIDEO_MODE_FULLSCREEN = (1 << 0),
+	AV_VIDEO_MODE_HW_ACCEL = (1 << 1),
+	AV_VIDEO_MODE_DOUBLE_BUFFER   = (1 << 2)
 } av_video_mode_t;
-
-/*!
-* \brief video configuration flags
-*
-* Defines masks determining which fields from av_video_config_t are valid
-*/
-typedef enum
-{
-	/*!
-	* Determines the fields \c mode valid in type av_video_config_t.
-	*/
-	AV_VIDEO_CONFIG_MODE = (1<<0),
-
-	/*!
-	* Determines the fields \c width and \c height valid in type av_video_config_t.
-	*/
-	AV_VIDEO_CONFIG_SIZE = (1<<1),
-
-	/*!
-	* Determines the field \c bpp valid from type av_video_config_t.
-	* The option is read only.
-	*/
-	AV_VIDEO_CONFIG_BPP  = (1<<2)
-} av_video_config_flags_t;
 
 /*!
 * \brief video configuration type
@@ -339,9 +317,6 @@ typedef enum
 */
 typedef struct av_video_config
 {
-	/*! Masks determining the valid fields */
-	av_video_config_flags_t flags;
-
 	/*! Fullscreen ot windowed video mode */
 	av_video_mode_t mode;
 

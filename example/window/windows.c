@@ -11,6 +11,8 @@
 #include <malloc.h>
 #include <string.h>
 #include <av_window.h>
+#include <av_input.h>
+#include <av_system.h>
 
 #define av_assert_ok(rc) av_assert(AV_OK == (rc), "assertion failed")
 
@@ -74,6 +76,11 @@ av_window_p window3;
 /* initialize test windows */
 static void init_windows( void )
 {
+	av_result_t rc;
+	av_video_config_t video_config;
+	av_video_p video;
+	av_input_p input;
+	av_system_p sys;
 	av_rect_t rect;
 
 	if (root)
@@ -83,8 +90,18 @@ static void init_windows( void )
 	}
 
 	av_rect_init(&rect, 0, 0, XRES, YRES);
-	av_assert_ok(av_torb_create_object("window", (av_object_p*)&root));
-	root->set_rect(root, &rect);
+	//av_assert_ok(av_torb_create_object("window", (av_object_p*)&root));
+	//root->set_rect(root, &rect);
+
+	/* get reference to system service */
+	if (AV_OK != (rc = av_torb_service_addref("system", (av_service_p*)&sys)))
+	{
+		av_torb_done();
+		printf("av_torb_service_addref failed\n");
+		return rc; /* exit cleanly with error status */
+	}
+	sys->create_window(sys, NULL, &rect, &root);
+	av_torb_service_release("system");
 	root->on_paint = paint_root;
 
 	av_rect_init(&rect, 1, 1, 1, 1);
@@ -415,6 +432,7 @@ int main(void)
 
 	av_torb_init();
 	av_window_register_torba();
+	
 	av_list_create(&update_list);
 
 	TEST(test_invalidate_root);

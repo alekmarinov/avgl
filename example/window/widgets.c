@@ -8,7 +8,6 @@
 /*                                                                   */
 /*********************************************************************/
 
-#include <unistd.h>
 #include <stdlib.h>
 #include <av_system.h>
 #include <av_window.h>

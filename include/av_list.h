@@ -281,7 +281,7 @@ typedef struct av_list
 *         - AV_OK on success
 *         - AV_EMEM on out of memory
 */
-av_result_t av_list_create(av_list_p* pplist);
+AV_API av_result_t av_list_create(av_list_p* pplist);
 
 #ifdef __cplusplus
 }

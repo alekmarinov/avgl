@@ -14,6 +14,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <av_log.h>
+
 #include <av_thread.h>
 #include <time.h>
 
@@ -141,20 +142,24 @@ static av_result_t av_log_set_verbosity(av_log_p self,
 										const char* name,
 										av_log_verbosity_t verbosity)
 {
-	av_result_t res;
+	av_result_t rc = AV_EFOUND;
 	av_logger_p logger;
 	av_assert(verbosity < LOG_VERBOSITIES_COUNT, "Invalid verbosity number");
-	av_assert(name, "name can't be NULL");
 
 	if (!(verbosity < LOG_VERBOSITIES_COUNT) || !name)
 		return AV_EARG;
 	
-	res = av_log_get_logger(self, name, &logger);
-	if (AV_OK == res)
+	logger = (av_logger_p)O_context(self);
+	while (logger)
 	{
-		logger->verbosity = verbosity;
+		if (!name || 0 == strcmp(name, logger->name))
+		{
+			logger->verbosity = verbosity;
+			rc = AV_OK;
+		}
+		logger = logger->next;
 	}
-	return res;
+	return rc;
 }
 
 static av_result_t av_log_get_verbosity(av_log_p self, 
@@ -227,6 +232,7 @@ static av_result_t av_log_log(av_log_p self,
 {                                                       \
 	va_list args;                                       \
 	char buffer[MAX_LOG_MESSAGE_SIZE];                  \
+	memset(buffer, 0, MAX_LOG_MESSAGE_SIZE);            \
 	va_start(args, fmt);                                \
 	vsnprintf(buffer, MAX_LOG_MESSAGE_SIZE, fmt, args); \
 	va_end(args);                                       \

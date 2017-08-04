@@ -119,6 +119,11 @@ static av_result_t av_sound_play(struct av_sound* self, struct av_sound_handle* 
 			return rc;
 		}
 
+		if (AV_OK != (rc = audio->enable(audio)))
+		{
+			return rc;
+		}
+
 		do
 		{
 			has_moredata = av_sound_format[ctx->id].setformat(format, ctx->pshandle, &frame_audio.data, sizeof(frame_audio.data), &len);

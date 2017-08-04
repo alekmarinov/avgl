@@ -10,7 +10,11 @@
 
 #include <malloc.h>
 #include <string.h>
-#include <strings.h>
+#ifdef _WIN32
+#  define strcasecmp _stricmp
+#else
+#  include <strings.h>
+#endif
 #include <av_system.h>
 #include <av_log.h>
 #include <av_prefs.h>
@@ -77,8 +81,8 @@ static av_result_t av_system_get_graphics(av_system_p self, av_graphics_p* ppgra
 
 		if (AV_OK != (rc = av_torb_service_addref("prefs", (av_service_p*)&prefs)))
 			return rc;
-		prefs->get_string(prefs, "graphics.driver",
-						  _default_graphics_driver, &graphics_driver);
+		prefs->get_string(prefs, "graphics.driver", _default_graphics_driver, &graphics_driver);
+		prefs->set_string(prefs, "graphics.driver", graphics_driver);
 		av_torb_service_release("prefs");
 
 		strcpy(graphics_class, "graphics_");
@@ -138,18 +142,19 @@ static av_result_t av_system_create_window(av_system_p self,
 		if (AV_OK != (rc = av_torb_service_addref("prefs", (av_service_p*)&prefs)))
 			return rc;
 		prefs->get_string(prefs, "system.video.mode", _default_video_mode, &video_mode);
+		prefs->set_string(prefs, "system.video.mode", video_mode);
 		prefs->get_int(prefs, "system.video.xres", _default_video_xres, &xres);
+		prefs->set_int(prefs, "system.video.xres", xres);
 		prefs->get_int(prefs, "system.video.yres", _default_video_yres, &yres);
+		prefs->set_int(prefs, "system.video.yres", yres);
 		av_torb_service_release("prefs");
 
 		if (AV_OK != (rc = self->get_video(self, &video)))
 			return rc;
 
-		video_config.flags  = AV_VIDEO_CONFIG_MODE | AV_VIDEO_CONFIG_SIZE;
+		video_config.mode = 0;
 		if (0 == strcasecmp("FULLSCREEN", video_mode))
-			video_config.mode   = AV_VIDEO_MODE_FULLSCREEN;
-		else
-			video_config.mode   = AV_VIDEO_MODE_WINDOWED;
+			video_config.mode   |= AV_VIDEO_MODE_FULLSCREEN;
 
 		rect.x = rect.y = 0;
 		if (rect.w == AV_DEFAULT || rect.h == AV_DEFAULT)
@@ -159,6 +164,7 @@ static av_result_t av_system_create_window(av_system_p self,
 		}
 		video_config.width  = rect.w;
 		video_config.height = rect.h;
+		video_config.bpp = 0;
 
 		/* setup video mode */
 		_log->info(_log, "Set video mode: %dx%d %s", video_config.width, video_config.height, video_mode);

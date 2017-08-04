@@ -46,6 +46,7 @@ static av_result_t av_window_set_parent(av_window_p self, av_window_p parent)
 	if (parent)
 	{
 		/* add window to parent's children */
+		self->system = parent->system;
 		return parent->add_child_top(parent, self);
 	}
 
@@ -167,8 +168,9 @@ static void av_window_set_visible(av_window_p self, av_bool_t visible)
 		self->get_rect(self, &rect);
 		rect.x = rect.y = 0;
 		self->rect_absolute(self, &rect);
+
 		av_assert(self->system, "System is not initialized yet");
-		if (rect.w && rect.h)
+		if (self->system && rect.w && rect.h)
 			self->system->invalidate_rect(self->system, &rect);
 	}
 }
@@ -271,7 +273,10 @@ static av_result_t av_window_repaint(av_window_p self)
 			}
 		}
 
-		ctx->video_surface->fill_rect(ctx->video_surface, &rect, 0, 0, 0, 0);
+		// FIXME: Brake dependency with video
+		if (ctx->video_surface)
+			ctx->video_surface->fill_rect(ctx->video_surface, &rect, 0, 0, 0, 0);
+
 		graphics->begin(graphics, ctx->graphics_surface);
 		graphics->set_clip(graphics, &rect);
 		self->on_paint(self, graphics);
@@ -299,7 +304,7 @@ static void av_window_update(av_window_p self, av_window_update_t window_update)
 			rect.x = rect.y = 0;
 			self->rect_absolute(self, &rect);
 			av_assert(self->system, "System is not initialized yet");
-			if (rect.w && rect.h)
+			if (self->system && rect.w && rect.h)
 				self->system->invalidate_rect(self->system, &rect);
 		}
 	}

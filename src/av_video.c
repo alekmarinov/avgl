@@ -10,6 +10,7 @@
 
 #include <av_torb.h>
 #include <av_video.h>
+#include <av_prefs.h>
 
 /* Blit source surface to this video surface */
 static av_result_t av_video_surface_blit(av_video_surface_p dst, av_rect_p dstrect, av_surface_p src, av_rect_p srcrect)
@@ -64,8 +65,10 @@ static av_result_t av_video_enum_video_modes(av_video_p self, video_mode_callbac
 
 static av_result_t av_video_set_configuration(av_video_p self, av_video_config_p video_config)
 {
+	av_prefs_p prefs;
 	AV_UNUSED(self);
 	AV_UNUSED(video_config);
+
 	return AV_ESUPPORTED;
 }
 

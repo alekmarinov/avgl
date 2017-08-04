@@ -7,7 +7,12 @@
 /* Description:   Abstract audio class                               */
 /*                                                                   */
 /*********************************************************************/
-#include <strings.h>
+
+#ifdef _WIN32
+#  define strcasecmp _stricmp
+#else
+#  include <strings.h>
+#endif
 
 #include <av_torb.h>
 #include <av_audio.h>

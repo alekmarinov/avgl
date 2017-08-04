@@ -32,26 +32,27 @@ av_result_t av_video_surface_sdl_constructor(av_object_p object);
 static av_result_t av_surface_sdl_set_size(av_surface_p psurface, int width, int height)
 {
 	av_video_surface_sdl_p self = (av_video_surface_sdl_p)psurface;
-	SDL_Surface *surface = O_context(self);
+	SDL_Surface *ctx = O_context(self);
+	SDL_Surface *surface;
 
 	/* checks if surface already created and dimensions are the same */
-	if (surface && width == surface->w && height == surface->h) return AV_OK;
-
+	if (ctx && width == ctx->w && height == ctx->h) return AV_OK;
+	Uint32 flags = ctx? ctx->flags:SDL_HWSURFACE;
 	/* creates 32bit SDL surface */
-	if (AV_NULL == (surface = SDL_CreateRGBSurface(SDL_SURFACE_TYPE,
-													width, height, 32,
-													SDL_SURFACE_MASK_RED, SDL_SURFACE_MASK_GREEN,
-													SDL_SURFACE_MASK_BLUE, SDL_SURFACE_MASK_ALPHA)))
+	if (AV_NULL == (surface = SDL_CreateRGBSurface(flags,
+													width, height, SDL_MEM_SURFACE_BPP,
+													SDL_MEM_SURFACE_MASK_RED, SDL_MEM_SURFACE_MASK_GREEN,
+													SDL_MEM_SURFACE_MASK_BLUE, SDL_MEM_SURFACE_MASK_ALPHA)))
 	{
 		return AV_EMEM;
 	}
 	SDL_LockSurface(surface);
 
-	if (O_context(self))
+	if (ctx)
 	{
 		/* destroys the previously created surface */
-		SDL_UnlockSurface((SDL_Surface *)O_context(self));
-		SDL_FreeSurface((SDL_Surface *)O_context(self));
+		SDL_UnlockSurface(ctx);
+		SDL_FreeSurface(ctx);
 	}
 	O_set_attr(self, CONTEXT_SDL_SURFACE, surface);
 	return AV_OK;

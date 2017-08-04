@@ -17,7 +17,11 @@
 #include <math.h>
 #include <malloc.h>
 #include <string.h>
-#include <strings.h>
+#ifdef _WIN32
+#  define strcasecmp _stricmp
+#else
+#  include <strings.h>
+#endif
 #include <av_timer.h>
 #include <av_system.h>
 #include <av_audio.h>
@@ -750,6 +754,7 @@ av_result_t av_player_register_torba(void)
 	if (AV_OK == av_torb_service_addref("prefs", (av_service_p*)&prefs))
 	{
 		prefs->get_string(prefs, "player.backend", "player", &player);
+		prefs->set_string(prefs, "player.backend", player);
 		av_torb_service_release("prefs");
 	}
 

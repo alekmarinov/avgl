@@ -16,6 +16,10 @@
 
 #include <av.h>
 #include <av_list.h>
+
+#ifdef _WIN32
+#define _TIMESPEC_DEFINED
+#endif
 #include <pthread.h>
 
 #ifdef __cplusplus

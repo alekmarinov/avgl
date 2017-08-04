@@ -20,11 +20,24 @@
 extern "C" {
 #endif
 
-#ifndef AV_API
+
 /*!
 * Defines API exportation type
 */
-#define AV_API extern
+#ifndef AV_API
+#  ifdef _WIN32
+#    ifndef AVGL_STATIC_LIB
+#      ifdef AVGL_BUILD
+#        define AV_API __declspec (dllexport)
+#      else
+#        define AV_API __declspec (dllimport)
+#      endif
+#    else
+#      define AV_API
+#    endif
+#  else
+#    define AV_API extern
+#  endif
 #endif
 
 /*! \def av_assert

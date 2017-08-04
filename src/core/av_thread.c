@@ -9,6 +9,7 @@
 /*********************************************************************/
 
 #include <av.h>
+
 #include <av_thread.h>
 #include <av_hash.h>
 #include <av_log.h>
@@ -17,7 +18,6 @@
 #  ifndef __USE_UNIX98
 #    define __USE_UNIX98
 #  endif
-#include <pthread.h>
 #include <errno.h>
 #endif
 
@@ -85,7 +85,7 @@ av_result_t av_thread_current(av_thread_p* ppthread)
 	pthread_t tid = pthread_self();
 	unsigned long* ptid = (unsigned long*)&tid;
 
-	sprintf(tkey, "%lu", *ptid);
+	snprintf(tkey, 11, "%lu", *ptid);
 
 	if (AV_OK == (rc = _mtx_threads_ht->lock_read(_mtx_threads_ht)))
 	{
@@ -216,7 +216,7 @@ static void av_thread_destroy(av_thread_p self)
 		self->join(self);
 	}
 
-	sprintf(tkey, "%lu", *ptid);
+	snprintf(tkey, 11, "%lu", *ptid);
 
 	/* discards thread data */
 	_mtx_threads_ht->lock_write(_mtx_threads_ht);
@@ -372,7 +372,7 @@ av_result_t av_thread_create(av_runnable_t runnable, void *arg, av_thread_p *ppt
 	/* adds the new (tid, self) pair to _threads_ht */
 	{
 		unsigned long* ptid = (unsigned long*)&tid;
-		sprintf(tkey, "%lu", *ptid);
+		snprintf(tkey, 11, "%lu", *ptid);
 	}
 
 	rc = _threads_ht->add(_threads_ht, tkey, self);
