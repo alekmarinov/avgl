@@ -15,7 +15,7 @@
 #define __AV_LOG_H
 
 #include <av.h>
-#include <av_torb.h>
+#include <av_oop.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -194,12 +194,12 @@ typedef struct av_log
 } av_log_t, *av_log_p;
 
 /*!
-* \brief Registers log class into TORBA
+* \brief Registers log class into oop container
 * \return av_result_t
 *         - AV_OK on success
 *         - AV_EMEM on out of memory
 */
-AV_API av_result_t av_log_register_torba(void);
+AV_API av_result_t av_log_register_oop(av_oop_p);
 
 #ifdef __cplusplus
 }

@@ -11,11 +11,10 @@
 /*                                                                   */
 /*********************************************************************/
 
-#include <stdlib.h>
-#include <string.h>
 #include <math.h>
 #include <av_hash.h>
 #include <av_thread.h>
+#include <av_stdc.h>
 
 /* Table is sized by primes to minimise clustering.
    See: http://planetmath.org/encyclopedia/GoodHashTablePrimes.html */
@@ -27,7 +26,7 @@ static const unsigned int sizes[] =
 };
 
 static const unsigned int sizes_count = sizeof(sizes) / sizeof(sizes[0]);
-static const float load_factor = 0.65;
+static const float load_factor = 0.65f;
 
 struct record 
 {
@@ -131,7 +130,7 @@ static av_result_t av_hash_add(av_hash_p self, const char* key, void* value)
 	}
 	
 	recs[ind].hash  = code;
-	recs[ind].key   = strdup(key);
+	recs[ind].key   = av_strdup(key);
 	recs[ind].value = value;
 	
 	h->records_count++;
@@ -161,7 +160,7 @@ static void* av_hash_get(av_hash_p self, const char* key)
 	*/
 	while (recs[ind].hash) 
 	{
-		if ((code == recs[ind].hash) && recs[ind].key && 0 == strcmp(key, recs[ind].key))
+		if ((code == recs[ind].hash) && recs[ind].key && 0 == av_strcmp(key, recs[ind].key))
 		{
 			value = recs[ind].value;
 			break;
@@ -190,7 +189,7 @@ static void* av_hash_remove(av_hash_p self, const char* key)
 	off = 0;
 	while (recs[ind].hash)
 	{
-		if ((code == recs[ind].hash) && recs[ind].key && 0 == strcmp(key, recs[ind].key))
+		if ((code == recs[ind].hash) && recs[ind].key && 0 == av_strcmp(key, recs[ind].key))
 		{
 			/* do not erase hash, so probes for collisions succeed */
 			value = recs[ind].value;
@@ -270,18 +269,18 @@ av_result_t av_hash_create(unsigned int capacity, av_hash_p *pphash)
 	unsigned int i, sind=0;
 	av_result_t rc;
 	
-	if (0 == (self = (av_hash_p)malloc(sizeof(av_hash_t))))
+	if (0 == (self = (av_hash_p)av_malloc(sizeof(av_hash_t))))
 	{
 		return AV_EMEM;
 	}
 	
-	if (0 == (h = (struct hash *)malloc(sizeof(struct hash))))
+	if (0 == (h = (struct hash *)av_malloc(sizeof(struct hash))))
 	{
 		free(self);
 		return AV_EMEM;
 	}
 	
-	capacity /= load_factor;
+	capacity = (unsigned int)floor(capacity / load_factor);
 	
 	for (i=0; i < sizes_count; i++) 
 		if (sizes[i] > capacity) 

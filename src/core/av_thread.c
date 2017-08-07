@@ -13,7 +13,7 @@
 #include <av_thread.h>
 #include <av_hash.h>
 #include <av_log.h>
-#include <malloc.h>
+#include <av_stdc.h>
 #ifdef AV_MT
 #  ifndef __USE_UNIX98
 #    define __USE_UNIX98
@@ -21,14 +21,16 @@
 #include <errno.h>
 #endif
 
+#ifdef _WIN32
+#define _TIMESPEC_DEFINED
+#endif
+#include <pthread.h>
+
 /* Hash table mapping handles pthread_t to av_thread_p */
 static av_hash_p    _threads_ht = 0;
 
 /* Mutex used for safe accessing _threads_ht */
 static av_rwmutex_p _mtx_threads_ht = 0;
-
-/* Logging object */
-static av_log_p _log = 0;
 
 /* Error messages */
 static const char* _err_mem        = "out of memory";
@@ -60,13 +62,15 @@ static av_result_t av_thread_error_process(int rc, const char* funcname, const c
 		}
 		if (errmsg)
 		{
-			if (_log) _log->error(_log, "%s returned error (%d) `%s' %s:%d",
-									funcname, rc, errmsg, srcfilename, linenumber);
+			// FIXME: provide logger
+			//if (_log) _log->error(_log, "%s returned error (%d) `%s' %s:%d",
+				//					funcname, rc, errmsg, srcfilename, linenumber);
 		}
 		else
 		{
-			if (_log) _log->error(_log, "%s returned unknown error code (%d) %s:%d",
-									funcname, rc, srcfilename, linenumber);
+			// FIXME: provide logger
+			// if (_log) _log->error(_log, "%s returned unknown error code (%d) %s:%d",
+			//						funcname, rc, srcfilename, linenumber);
 		}
 	}
 	return averr;
@@ -189,24 +193,24 @@ static av_result_t av_thread_start(av_thread_p self)
 
 static av_result_t av_thread_join(av_thread_p self)
 {
-	return av_thread_error_check("pthread_join", pthread_join(self->tid, 0));
+	return av_thread_error_check("pthread_join", pthread_join(*(pthread_t*)self->tid, 0));
 }
 
 static av_result_t av_thread_detach(av_thread_p self)
 {
-	return av_thread_error_check("pthread_detach", pthread_detach(self->tid));
+	return av_thread_error_check("pthread_detach", pthread_detach(*(pthread_t*)self->tid));
 }
 
 static av_bool_t av_thread_equals(av_thread_p self, av_thread_p athread)
 {
-	return pthread_equal(self->tid, athread->tid)?AV_TRUE:AV_FALSE;
+	return pthread_equal(*(pthread_t*)self->tid, *(pthread_t*)athread->tid)?AV_TRUE:AV_FALSE;
 }
 
 static void av_thread_destroy(av_thread_p self)
 {
 	char tkey[11]; /* a key string with size of "0x12345678\0" */
 	av_bool_t active;
-	unsigned long* ptid = (unsigned long*)&(self->tid);
+	unsigned long* ptid = (unsigned long*)self->tid;
 
 	/* makes sure the tread is stopped before destroyed */
 	if ((AV_OK == (self->is_active(self, &active))) && active)
@@ -245,9 +249,6 @@ static void av_thread_destroy(av_thread_p self)
 
 		/* marks the _mtx_threads_ht is not initialized. */
 		_mtx_threads_ht = AV_NULL;
-
-		av_torb_service_release("log");
-		_log = AV_NULL;
 	}
 }
 #endif /* AV_MT */
@@ -256,7 +257,7 @@ av_result_t av_thread_create(av_runnable_t runnable, void *arg, av_thread_p *ppt
 {
 #ifdef AV_MT
 	char               tkey[11]; /* a key string with size of "0x12345678\0" */
-	av_thread_p        self = (av_thread_p)malloc(sizeof(av_thread_t));
+	av_thread_p        self = (av_thread_p)av_malloc(sizeof(av_thread_t));
 	pthread_t          tid;
 	pthread_attr_t     attr;
 	av_result_t rc;
@@ -311,11 +312,8 @@ av_result_t av_thread_create(av_runnable_t runnable, void *arg, av_thread_p *ppt
 	/* on first created thread the global _mtx_threads_ht is not initialized yet */
 	if (!_mtx_threads_ht)
 	{
-		av_torb_service_addref("log", (av_service_p*)&_log);
-
 		if (AV_OK != (rc = av_rwmutex_create(&_mtx_threads_ht)))
 		{
-			av_torb_service_release("log");
 			self->cnd_start->destroy(self->cnd_start);
 			self->mtx_start->destroy(self->mtx_start);
 			self->mtx_active->destroy(self->mtx_active);
@@ -367,7 +365,8 @@ av_result_t av_thread_create(av_runnable_t runnable, void *arg, av_thread_p *ppt
 		return rc;
 	}
 
-	self->tid = tid;
+	self->tid = av_malloc(sizeof(pthread_t));
+	*(pthread_t *)self->tid = tid;
 
 	/* adds the new (tid, self) pair to _threads_ht */
 	{
@@ -448,7 +447,7 @@ static void av_mutex_destroy(av_mutex_p self)
 av_result_t av_mutex_create(av_mutex_p* ppmutex)
 {
 	int rc;
-	av_mutex_p self = (av_mutex_p)malloc(sizeof(av_mutex_t));
+	av_mutex_p self = (av_mutex_p)av_malloc(sizeof(av_mutex_t));
 	if (!self)
 		return AV_EMEM;
 
@@ -457,7 +456,7 @@ av_result_t av_mutex_create(av_mutex_p* ppmutex)
 	self->unlock    = av_mutex_unlock;
 	self->destroy   = av_mutex_destroy;
 #ifdef AV_MT
-	self->mid       = malloc(sizeof(pthread_mutex_t));
+	self->mid       = av_malloc(sizeof(pthread_mutex_t));
 	if (!self->mid)
 	{
 		free(self);
@@ -541,7 +540,7 @@ static void av_rwmutex_destroy(av_rwmutex_p self)
 av_result_t av_rwmutex_create( av_rwmutex_p* ppmutex )
 {
 	int rc;
-	av_rwmutex_p self   = (av_rwmutex_p)malloc(sizeof(av_rwmutex_t));
+	av_rwmutex_p self   = (av_rwmutex_p)av_malloc(sizeof(av_rwmutex_t));
 	if (!self) return AV_EMEM;
 
 	self->lock_read     = av_rwmutex_lock_read;
@@ -552,7 +551,7 @@ av_result_t av_rwmutex_create( av_rwmutex_p* ppmutex )
 	self->destroy       = av_rwmutex_destroy;
 
 #ifdef AV_MT
-	self->mid           = malloc(sizeof(pthread_rwlock_t));
+	self->mid           = av_malloc(sizeof(pthread_rwlock_t));
 	if (!self->mid)
 	{
 		free(self);
@@ -642,7 +641,7 @@ static void av_condition_destroy(av_condition_p self)
 av_result_t av_condition_create( av_condition_p* ppcondition )
 {
 	int rc;
-	av_condition_p self   = (av_condition_p)malloc(sizeof(av_condition_t));
+	av_condition_p self   = (av_condition_p)av_malloc(sizeof(av_condition_t));
 	if (!self)
 		return AV_EMEM;
 
@@ -654,7 +653,7 @@ av_result_t av_condition_create( av_condition_p* ppcondition )
 	self->destroy         = av_condition_destroy;
 
 #ifdef AV_MT
-	self->cid             = malloc(sizeof(pthread_cond_t));
+	self->cid             = av_malloc(sizeof(pthread_cond_t));
 	if (!self->cid)
 	{
 		free(self);
@@ -774,7 +773,7 @@ static void av_sync_queue_destroy(void* pqueue)
 av_result_t av_sync_queue_create(int elements_max, av_sync_queue_p* ppqueue)
 {
 	av_result_t rc;
-	av_sync_queue_p self = (av_sync_queue_p)malloc(sizeof(av_sync_queue_t));
+	av_sync_queue_p self = (av_sync_queue_p)av_malloc(sizeof(av_sync_queue_t));
 	if (!self)
 		return AV_EMEM;
 

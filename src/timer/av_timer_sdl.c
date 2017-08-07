@@ -9,15 +9,13 @@
 
 #ifdef WITH_SYSTEM_SDL
 
+#include <avgl.h>
 #include <SDL.h>
-#include <av_list.h>
-#include <av_timer.h>
+
+av_result_t av_timer_register_oop(av_oop_p);
 
 #define CONTEXT "timer_sdl_ctx"
 #define O_context(o) O_attr(o, CONTEXT)
-
-/* exported prototype */
-av_result_t av_timer_sdl_register_torba(void);
 
 /* SDL timer context */
 typedef struct av_timer_ctx
@@ -121,12 +119,6 @@ static void av_timer_sdl_sleep_ms(unsigned long mills)
 	SDL_Delay(mills);
 }
 
-/* Sleeps for timeout given in microseconds */
-static void av_timer_sdl_sleep_micro(unsigned long micrs)
-{
-	SDL_Delay(micrs / 1000);
-}
-
 /* destructor */
 static void av_timer_sdl_destructor(void* pobject)
 {
@@ -167,17 +159,28 @@ static av_result_t av_timer_sdl_constructor(av_object_p pobject)
 	self->remove_timer = av_timer_sdl_remove_timer;
 	self->sleep        = av_timer_sdl_sleep;
 	self->sleep_ms     = av_timer_sdl_sleep_ms;
-	self->sleep_micro  = av_timer_sdl_sleep_micro;
 	self->now          = av_timer_sdl_now;
 
 	return AV_OK;
 }
 
 /* Registers SDL timer class into TORBA class repository */
-av_result_t av_timer_sdl_register_torba(void)
+av_result_t av_timer_sdl_register_oop(av_oop_p oop)
 {
-	return av_torb_register_class("timer_sdl", "timer", sizeof(av_timer_t),
-								  av_timer_sdl_constructor, av_timer_sdl_destructor);
+	av_timer_p timer;
+	av_result_t rc;
+	if (AV_OK != (rc = av_timer_register_oop(oop)))
+		return rc;
+
+	if (AV_OK != (rc = oop->define_class(oop, "timer_sdl", "timer", sizeof(av_timer_t),
+		av_timer_sdl_constructor, av_timer_sdl_destructor)))
+		return rc;
+
+
+	if (AV_OK != (rc = oop->new(oop, "timer_sdl", (av_object_p*)&timer)))
+		return rc;
+
+	return oop->register_service(oop, "timer", (av_service_p)timer);
 }
 
 #endif /* WITH_SYSTEM_SDL */

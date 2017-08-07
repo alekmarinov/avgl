@@ -233,10 +233,6 @@ typedef enum
 	AV_KEY_LeftControl,
 	AV_KEY_RightAlt,
 	AV_KEY_LeftAlt,
-	AV_KEY_RightMeta,
-	AV_KEY_LeftMeta,
-	AV_KEY_RightSuper,
-	AV_KEY_LeftSuper,
 	AV_KEYS_COUNT
 } av_key_t;
 
@@ -249,9 +245,7 @@ typedef enum
 	AV_KEYMOD_CTRL_LEFT,
 	AV_KEYMOD_CTRL_RIGHT,
 	AV_KEYMOD_ALT_LEFT,
-	AV_KEYMOD_ALT_RIGHT,
-	AV_KEYMOD_META_LEFT,
-	AV_KEYMOD_META_RIGHT
+	AV_KEYMOD_ALT_RIGHT
 } av_keymod_t;
 
 #ifdef __cplusplus

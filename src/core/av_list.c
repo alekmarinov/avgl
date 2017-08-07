@@ -8,8 +8,8 @@
 /*                                                                   */
 /*********************************************************************/
 
-#include <malloc.h>
 #include <av_list.h>
+#include <av_stdc.h>
 
 /* defines list item */
 struct list_item
@@ -42,7 +42,7 @@ static av_result_t av_list_push_first(av_list_p self, void* value)
 	av_assert(ctx, "list is not properly initialized");
 
 	/* initializes new item */
-	item = (struct list_item*)malloc(sizeof(struct list_item));
+	item = (struct list_item*)av_malloc(sizeof(struct list_item));
 	if (!item)
 		return AV_EMEM;
 
@@ -74,7 +74,7 @@ static av_result_t av_list_push_last(av_list_p self, void* value)
 	av_assert(ctx, "list is not properly initialized");
 
 	/* initializes new item */
-	item = (struct list_item*)malloc(sizeof(struct list_item));
+	item = (struct list_item*)av_malloc(sizeof(struct list_item));
 	if (!item)
 		return AV_EMEM;
 
@@ -110,7 +110,7 @@ static av_result_t av_list_insert_next(av_list_p self, void* value)
 	if (self->has_more(self))
 	{
 		/* initializes new item */
-		item = (struct list_item*)malloc(sizeof(struct list_item));
+		item = (struct list_item*)av_malloc(sizeof(struct list_item));
 		if (!item)
 			return AV_EMEM;
 
@@ -151,7 +151,7 @@ static av_result_t av_list_insert_prev(av_list_p self, void* value)
 	if (self->has_more(self))
 	{
 		/* initializes new item */
-		item = (struct list_item*)malloc(sizeof(struct list_item));
+		item = (struct list_item*)av_malloc(sizeof(struct list_item));
 		if (!item)
 			return AV_EMEM;
 
@@ -493,10 +493,10 @@ av_result_t av_list_create(av_list_p* pplist)
 	av_list_p self;
 	struct list* ctx;
 
-	self = (av_list_p)malloc(sizeof(av_list_t));
+	self = (av_list_p)av_malloc(sizeof(av_list_t));
 	if (!self) return AV_EMEM;
 
-	ctx = (struct list*)malloc(sizeof(struct list));
+	ctx = (struct list*)av_malloc(sizeof(struct list));
 	if (!ctx)
 	{
 		free(self);

@@ -10,11 +10,8 @@
 
 #ifdef WITH_SYSTEM_SDL
 
-#include <av_input.h>
+#include <avgl.h>
 #include <SDL.h>
-
-/* exported prototype */
-av_result_t av_input_sdl_register_torba(void);
 
 enum
 {
@@ -22,7 +19,7 @@ enum
 	KEY_AVGL_TO_SDL = AV_FALSE
 };
 
-static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t toavgl)
+static av_bool_t av_input_translate_key(SDL_Keycode *skey, av_key_t* akey, av_bool_t toavgl)
 {
 	/* Numeric keys */
 	if (toavgl)
@@ -45,9 +42,9 @@ static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t 
 	/* Numeric keypad */
 	if (toavgl)
 	{
-		if (*skey >= SDLK_KP0 && *skey <= SDLK_KP9)
+		if (*skey >= SDLK_KP_0 && *skey <= SDLK_KP_9)
 		{
-			*akey = AV_KEY_0 + *skey - SDLK_KP0;
+			*akey = AV_KEY_0 + *skey - SDLK_KP_0;
 			return AV_TRUE;
 		}
 	}
@@ -55,7 +52,7 @@ static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t 
 	{
 		if (*akey >= AV_KEY_0 && *akey <= AV_KEY_9)
 		{
-			*skey = SDLK_KP0 + *akey - AV_KEY_0;
+			*skey = SDLK_KP_0 + *akey - AV_KEY_0;
 			return AV_TRUE;
 		}
 	}
@@ -181,7 +178,7 @@ static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t 
 			case SDLK_DELETE:
 				*akey = AV_KEY_Delete;
 				return AV_TRUE;
-			case SDLK_PRINT:
+			case SDLK_PRINTSCREEN:
 				*akey = AV_KEY_Print;
 				return AV_TRUE;
 			case SDLK_PAUSE:
@@ -215,13 +212,13 @@ static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t 
 				return AV_TRUE;
 
 			/* Key state modifier keys */
-			case SDLK_NUMLOCK:
+			case SDLK_NUMLOCKCLEAR:
 				*akey = AV_KEY_Numlock;
 				return AV_TRUE;
 			case SDLK_CAPSLOCK:
 				*akey = AV_KEY_Capslock;
 				return AV_TRUE;
-			case SDLK_SCROLLOCK:
+			case SDLK_SCROLLLOCK:
 				*akey = AV_KEY_Scrolllock;
 				return AV_TRUE;
 			case SDLK_RSHIFT:
@@ -241,18 +238,6 @@ static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t 
 				return AV_TRUE;
 			case SDLK_LALT:
 				*akey = AV_KEY_LeftAlt;
-				return AV_TRUE;
-			case SDLK_RMETA:
-				*akey = AV_KEY_RightMeta;
-				return AV_TRUE;
-			case SDLK_LMETA:
-				*akey = AV_KEY_LeftMeta;
-				return AV_TRUE;
-			case SDLK_LSUPER:
-				*akey = AV_KEY_LeftSuper;
-				return AV_TRUE;
-			case SDLK_RSUPER:
-				*akey = AV_KEY_RightSuper;
 				return AV_TRUE;
 			default:
 				break;
@@ -329,7 +314,7 @@ static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t 
 				*skey = SDLK_DELETE;
 				return AV_TRUE;
 			case AV_KEY_Print:
-				*skey = SDLK_PRINT;
+				*skey = SDLK_PRINTSCREEN;
 				return AV_TRUE;
 			case AV_KEY_Pause:
 				*skey = SDLK_PAUSE;
@@ -363,13 +348,13 @@ static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t 
 
 			/* Key state modifier keys */
 			case AV_KEY_Numlock:
-				*skey = SDLK_NUMLOCK;
+				*skey = SDLK_NUMLOCKCLEAR;
 				return AV_TRUE;
 			case AV_KEY_Capslock:
 				*skey = SDLK_CAPSLOCK;
 				return AV_TRUE;
 			case AV_KEY_Scrolllock:
-				*skey = SDLK_SCROLLOCK;
+				*skey = SDLK_SCROLLLOCK;
 				return AV_TRUE;
 			case AV_KEY_RightShift:
 				*skey = SDLK_RSHIFT;
@@ -388,18 +373,6 @@ static av_bool_t av_input_translate_key(SDLKey *skey, av_key_t* akey, av_bool_t 
 				return AV_TRUE;
 			case AV_KEY_LeftAlt:
 				*skey = SDLK_LALT;
-				return AV_TRUE;
-			case AV_KEY_RightMeta:
-				*skey = SDLK_RMETA;
-				return AV_TRUE;
-			case AV_KEY_LeftMeta:
-				*skey = SDLK_LMETA;
-				return AV_TRUE;
-			case AV_KEY_LeftSuper:
-				*skey = SDLK_LSUPER;
-				return AV_TRUE;
-			case AV_KEY_RightSuper:
-				*skey = SDLK_RSUPER;
 				return AV_TRUE;
 			default:
 				break;
@@ -442,15 +415,6 @@ static av_bool_t av_input_sdl_poll_event(av_input_p self, av_event_p event)
 					case SDL_BUTTON_MIDDLE:
 						mouse_button = AV_MOUSE_BUTTON_MIDDLE;
 					break;
-					case SDL_BUTTON_WHEELUP:
-					case SDL_BUTTON_WHEELDOWN:
-						if (e.type == SDL_MOUSEBUTTONDOWN)
-						{
-							mouse_button = AV_MOUSE_BUTTON_WHEEL;
-							button_status = (e.button.button == SDL_BUTTON_WHEELUP)?AV_BUTTON_RELEASED:AV_BUTTON_PRESSED;
-						}
-						else return AV_FALSE;
-					break;
 					case SDL_BUTTON_X1:
 						mouse_button = AV_MOUSE_BUTTON_X1;
 					break;
@@ -463,20 +427,22 @@ static av_bool_t av_input_sdl_poll_event(av_input_p self, av_event_p event)
 				av_event_init_mouse_button(event, mouse_button, button_status, mousex, mousey);
 			}
 			break;
+			case SDL_MOUSEWHEEL:
+			{
+				int mousex, mousey;
+				av_event_mouse_button_t mouse_button = AV_MOUSE_BUTTON_WHEEL;
+				av_event_button_status_t button_status = (e.wheel.direction == SDL_MOUSEWHEEL_NORMAL) ? AV_BUTTON_PRESSED : AV_BUTTON_RELEASED;
+				SDL_GetMouseState(&mousex, &mousey);
+				av_event_init_mouse_button(event, mouse_button, button_status, mousex, mousey);
+			}
+			break;
 			case SDL_KEYUP:
 			case SDL_KEYDOWN:
 			{
 				av_event_button_status_t button_status = (e.type == SDL_KEYUP)?AV_BUTTON_RELEASED:AV_BUTTON_PRESSED;
 				av_key_t key;
-				if (0 == e.key.keysym.unicode)
-				{
-					if (AV_FALSE == av_input_translate_key(&e.key.keysym.sym, &key, KEY_SDL_TO_AVGL))
-						return AV_FALSE;
-				}
-				else
-				{
-					key = e.key.keysym.unicode;
-				}
+				if (AV_FALSE == av_input_translate_key(&e.key.keysym.sym, &key, KEY_SDL_TO_AVGL))
+					return AV_FALSE;
 
 				av_event_init_keyboard(event, key, button_status);
 
@@ -520,7 +486,7 @@ static av_result_t av_input_sdl_push_event(av_input_p self, av_event_p event)
 	SDL_Event e;
 	AV_UNUSED(self);
 
-	memset(&e, 0, sizeof(SDL_Event));
+	av_memset(&e, 0, sizeof(SDL_Event));
 	switch (event->type)
 	{
 		case AV_EVENT_QUIT:
@@ -537,7 +503,6 @@ static av_result_t av_input_sdl_push_event(av_input_p self, av_event_p event)
 				e.key.type = e.type = SDL_KEYUP;
 				e.key.state = SDL_RELEASED;
 			}
-			e.key.which = 0; /* FIXME: The keyboard device index? */
 
 			if (AV_FALSE == av_input_translate_key(&e.key.keysym.sym, &event->key, KEY_AVGL_TO_SDL))
 				return AV_EARG;
@@ -553,8 +518,6 @@ static av_result_t av_input_sdl_push_event(av_input_p self, av_event_p event)
 				e.button.type = e.type = SDL_MOUSEBUTTONUP;
 				e.button.state = SDL_RELEASED;
 			}
-			e.button.which = 0; /* FIXME: The mouse device index? */
-
 			switch (event->mouse_button)
 			{
 				case AV_MOUSE_BUTTON_LEFT:
@@ -565,13 +528,11 @@ static av_result_t av_input_sdl_push_event(av_input_p self, av_event_p event)
 				break;
 				case AV_MOUSE_BUTTON_MIDDLE:
 					e.button.button = SDL_BUTTON_MIDDLE;
-				break;
+					break;
 				case AV_MOUSE_BUTTON_WHEEL:
-					if (AV_BUTTON_PRESSED == event->button_status)
-						e.button.button = SDL_BUTTON_WHEELDOWN;
-					else
-						e.button.button = SDL_BUTTON_WHEELUP;
-				break;
+					e.type = SDL_MOUSEWHEEL;
+					e.wheel.direction = (AV_BUTTON_PRESSED == event->button_status) ? SDL_MOUSEWHEEL_NORMAL : SDL_MOUSEWHEEL_FLIPPED;
+					break;
 				case AV_MOUSE_BUTTON_X1:
 					e.button.button = SDL_BUTTON_X1;
 				break;
@@ -584,7 +545,6 @@ static av_result_t av_input_sdl_push_event(av_input_p self, av_event_p event)
 		break;
 		case AV_EVENT_MOUSE_MOTION:
 			e.type = e.motion.type = SDL_MOUSEMOTION;
-			e.motion.which = 0; /* FIXME: The mouse device index? */
 			if (AV_BUTTON_PRESSED == event->button_status)
 				e.motion.state = SDL_PRESSED;
 			else
@@ -620,7 +580,7 @@ static av_result_t av_input_sdl_push_event(av_input_p self, av_event_p event)
 */
 static av_keymod_t av_input_sdl_get_key_modifiers(struct av_input* self)
 {
-	SDLMod modstate = SDL_GetModState();
+	SDL_Keymod modstate = SDL_GetModState();
 	av_keymod_t                 keymods  = AV_KEYMOD_NONE;
 	if (modstate & KMOD_LSHIFT) keymods |= (1 << AV_KEYMOD_SHIFT_LEFT);
 	if (modstate & KMOD_RSHIFT) keymods |= (1 << AV_KEYMOD_SHIFT_RIGHT);
@@ -628,27 +588,8 @@ static av_keymod_t av_input_sdl_get_key_modifiers(struct av_input* self)
 	if (modstate & KMOD_RCTRL)  keymods |= (1 << AV_KEYMOD_CTRL_RIGHT);
 	if (modstate & KMOD_LALT)   keymods |= (1 << AV_KEYMOD_ALT_LEFT);
 	if (modstate & KMOD_RALT)   keymods |= (1 << AV_KEYMOD_ALT_RIGHT);
-	if (modstate & KMOD_LMETA)  keymods |= (1 << AV_KEYMOD_META_LEFT);
-	if (modstate & KMOD_RMETA)  keymods |= (1 << AV_KEYMOD_META_RIGHT);
 	AV_UNUSED(self);
 	return keymods;
-}
-
-
-/*
-* Flush pending events
-*/
-static int av_input_sdl_flush_events(struct av_input* self)
-{
-	SDL_Event events[100];
-	int count, flushed_count = 0;
-	AV_UNUSED(self);
-
-	while ( (count = SDL_PeepEvents(events, 100, SDL_GETEVENT, SDL_ALLEVENTS)) > 0)
-	{
-		flushed_count += count;
-	}
-	return flushed_count;
 }
 
 /* Initializes memory given by the input pointer with the input class information */
@@ -658,14 +599,23 @@ static av_result_t av_input_sdl_constructor(av_object_p object)
 	self->poll_event        = av_input_sdl_poll_event;
 	self->push_event        = av_input_sdl_push_event;
 	self->get_key_modifiers = av_input_sdl_get_key_modifiers;
-	self->flush_events      = av_input_sdl_flush_events;
 	return AV_OK;
 }
 
 /* Registers sdl input class into TORBA class repository */
-av_result_t av_input_sdl_register_torba(void)
+av_result_t av_input_sdl_register_oop(av_oop_p oop)
 {
-	return av_torb_register_class("input_sdl", "input", sizeof(av_input_t), av_input_sdl_constructor, AV_NULL);
+	av_result_t rc;
+	av_input_p input;
+
+	if (AV_OK != (rc = oop->define_class(oop, "input_sdl", "input", sizeof(av_input_t), av_input_sdl_constructor, AV_NULL)))
+		return rc;
+
+	if (AV_OK != (rc = oop->new(oop, "input_sdl", (av_object_p*)&input)))
+		return rc;
+
+	/* register input as service */
+	return oop->register_service(oop, "input", (av_service_p)input);
 }
 
 #endif /* WITH_SYSTEM_SDL */

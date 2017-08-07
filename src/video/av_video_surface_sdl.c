@@ -24,7 +24,7 @@
 av_result_t av_sdl_error_process(int, const char*, const char*, int);
 
 /* exported prototypes */
-av_result_t av_video_surface_sdl_register_torba(void);
+av_result_t av_video_surface_sdl_register_oop(av_oop_p oop);
 av_result_t av_video_surface_sdl_constructor(av_object_p object);
 
 #define av_sdl_error_check(funcname, rc) av_sdl_error_process(rc, funcname, __FILE__, __LINE__)
@@ -37,9 +37,9 @@ static av_result_t av_surface_sdl_set_size(av_surface_p psurface, int width, int
 
 	/* checks if surface already created and dimensions are the same */
 	if (ctx && width == ctx->w && height == ctx->h) return AV_OK;
-	Uint32 flags = ctx? ctx->flags:SDL_HWSURFACE;
+
 	/* creates 32bit SDL surface */
-	if (AV_NULL == (surface = SDL_CreateRGBSurface(flags,
+	if (AV_NULL == (surface = SDL_CreateRGBSurface(0,
 													width, height, SDL_MEM_SURFACE_BPP,
 													SDL_MEM_SURFACE_MASK_RED, SDL_MEM_SURFACE_MASK_GREEN,
 													SDL_MEM_SURFACE_MASK_BLUE, SDL_MEM_SURFACE_MASK_ALPHA)))
@@ -279,9 +279,9 @@ av_result_t av_video_surface_sdl_constructor(av_object_p object)
 }
 
 /* Registers SDL video surface class into TORBA class repository */
-av_result_t av_video_surface_sdl_register_torba(void)
+av_result_t av_video_surface_sdl_register_oop(av_oop_p oop)
 {
-	return av_torb_register_class("video_surface_sdl", "video_surface", sizeof(av_video_surface_sdl_t),
+	return oop->define_class(oop, "video_surface_sdl", "video_surface", sizeof(av_video_surface_sdl_t),
 								  av_video_surface_sdl_constructor, av_video_surface_sdl_destructor);
 }
 

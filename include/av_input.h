@@ -16,7 +16,7 @@
 
 #include <av.h>
 #include <av_keys.h>
-#include <av_torb.h>
+#include <av_oop.h>
 #include <av_event.h>
 
 #ifdef __cplusplus
@@ -30,8 +30,8 @@ struct av_system;
 */
 typedef struct av_input
 {
-	/*! Parent class object */
-	av_object_t object;
+	/*! Parent class service */
+	av_service_t service;
 
 	/*!
 	* \brief Polls for currently pending events
@@ -71,7 +71,7 @@ typedef struct av_input
 *         - AV_OK on success
 *         - AV_EMEM on out of memory
 */
-AV_API av_result_t av_input_register_torba(void);
+AV_API av_result_t av_input_register_oop(av_oop_p);
 
 #ifdef __cplusplus
 }

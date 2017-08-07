@@ -14,7 +14,7 @@
 #ifndef __AV_SCRIPTING_H
 #define __AV_SCRIPTING_H
 
-#include <av_torb.h>
+#include <av_oop.h>
 
 #ifdef __cplusplus
 extern "C" {

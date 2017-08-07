@@ -14,7 +14,7 @@
 #ifndef __AV_TIMER_H
 #define __AV_TIMER_H
 
-#include <av_torb.h>
+#include <av_oop.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,8 +34,8 @@ typedef av_bool_t (*av_timer_callback_p)(void* arg);
 */
 typedef struct av_timer
 {
-	/*! Parent class object */
-	av_object_t object;
+	/*! Parent class service */
+	av_service_t service;
 
 	/*!
 	* \brief Adds callback function executed in intervals (given in milliseconds)
@@ -58,12 +58,6 @@ typedef struct av_timer
 	* \param mills is the time to sleep in millisecs (1/1000 seconds ;)
 	*/
 	void (*sleep_ms)(unsigned long mills);
-	
-	/*!
-	* \brief Sleeps for timeout given in microseconds
-	* \param micrs is the time to sleep in microseconds (1/1,000,000 seconds ;)
-	*/
-	void (*sleep_micro)(unsigned long micrs);
 
 	/*!
 	* \brief Returns current time since computer started in ms
@@ -80,7 +74,7 @@ typedef struct av_timer
 *         - AV_OK on success
 *         - != AV_OK on error
 */
-AV_API av_result_t av_timer_register_torba(void);
+AV_API av_result_t av_timer_register_oop(av_oop_p);
 
 #ifdef __cplusplus
 }

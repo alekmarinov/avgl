@@ -50,8 +50,8 @@ static av_result_t av_input_constructor(av_object_p pobject)
 	return AV_OK;
 }
 
-/* Registers input class into TORBA class repository */
-av_result_t av_input_register_torba(void)
+/* Registers input class into oop container */
+av_result_t av_input_register_oop(av_oop_p oop)
 {
-	return av_torb_register_class("input", AV_NULL, sizeof(av_input_t), av_input_constructor, AV_NULL);
+	return oop->define_class(oop, "input", "service", sizeof(av_input_t), av_input_constructor, AV_NULL);
 }

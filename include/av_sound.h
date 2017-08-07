@@ -15,7 +15,7 @@
 #define __AV_SOUND_H
 
 #include <stdint.h>
-#include <av_torb.h>
+#include <av_oop.h>
 #include <av_audio.h>
 
 #ifdef __cplusplus

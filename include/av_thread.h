@@ -17,11 +17,6 @@
 #include <av.h>
 #include <av_list.h>
 
-#ifdef _WIN32
-#define _TIMESPEC_DEFINED
-#endif
-#include <pthread.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -246,7 +241,7 @@ typedef int (*av_runnable_t)(struct av_thread*);
 typedef struct av_thread
 {
 	/*! Implementation specific handle */
-	pthread_t            tid;
+	void*                tid;
 
 	/*! Thread routine */
 	av_runnable_t        runnable;

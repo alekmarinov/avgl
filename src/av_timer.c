@@ -44,12 +44,6 @@ static void av_timer_sleep_ms(unsigned long mills)
 	AV_UNUSED(mills);
 }
 
-/* Sleeps for timeout given in microseconds */
-static void av_timer_sleep_micro(unsigned long micrs)
-{
-	AV_UNUSED(micrs);
-}
-
 /* Returns current time since computer started in ms */
 static unsigned long av_timer_now(void)
 {
@@ -65,13 +59,12 @@ static av_result_t av_timer_constructor(av_object_p pobject)
 	self->remove_timer = av_timer_remove_timer;
 	self->sleep        = av_timer_sleep;
 	self->sleep_ms     = av_timer_sleep_ms;
-	self->sleep_micro  = av_timer_sleep_micro;
 	self->now          = av_timer_now;
 
 	return AV_OK;
 }
 
-av_result_t av_timer_register_torba(void)
+av_result_t av_timer_register_oop(av_oop_p oop)
 {
-	return av_torb_register_class("timer", AV_NULL, sizeof(av_timer_t), av_timer_constructor, AV_NULL);
+	return oop->define_class(oop, "timer", "service", sizeof(av_timer_t), av_timer_constructor, AV_NULL);
 }

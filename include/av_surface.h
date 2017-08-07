@@ -15,7 +15,7 @@
 #define __AV_SURFACE_H
 
 #include <av.h>
-#include <av_torb.h>
+#include <av_oop.h>
 #include <av_rect.h>
 
 #ifdef __cplusplus

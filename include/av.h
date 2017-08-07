@@ -14,12 +14,9 @@
 #ifndef __AV_H
 #define __AV_H
 
-#include <av_config.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /*!
 * Defines API exportation type
@@ -27,7 +24,7 @@ extern "C" {
 #ifndef AV_API
 #  ifdef _WIN32
 #    ifndef AVGL_STATIC_LIB
-#      ifdef AVGL_BUILD
+#      ifdef AVGL_EXPORTS
 #        define AV_API __declspec (dllexport)
 #      else
 #        define AV_API __declspec (dllimport)

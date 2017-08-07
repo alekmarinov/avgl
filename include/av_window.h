@@ -16,9 +16,9 @@
 
 #include <av_rect.h>
 #include <av_event.h>
-#include <av_torb.h>
+#include <av_oop.h>
 #include <av_graphics.h>
-#include <av_video.h>
+#include <av_display.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,15 +60,6 @@ typedef struct av_window
 	/*! Parent class object */
 	av_object_t object;
 
-	/*! Implementation specific */
-	void* context;
-
-	/*! Owner system object */
-	struct av_system* system;
-
-	/*! Attach "user" data to window */
-	void* data;
-
 	/*! Origin X */
 	int origin_x;
 
@@ -79,7 +70,7 @@ typedef struct av_window
 	unsigned long hover_delay;
 	
 	/*! Window cursor shape */
-	av_video_cursor_shape_t cursor;
+	av_display_cursor_shape_t cursor;
 
 	/*! Window cursor visitibility status */
 	av_bool_t cursor_visible;
@@ -194,7 +185,14 @@ typedef struct av_window
 	* \param self is a reference to this object
 	* \return a rectangle occuppied by this window relative to its parent
 	*/
-	void (*get_rect)                   (struct av_window* self, av_rect_p rect);
+	void(*get_rect)                   (struct av_window* self, av_rect_p rect);
+
+	/*!
+	* \brief Returns the window rectangle in absolute coordinates
+	* \param self is a reference to this object
+	* \return a rectangle occuppied by this window
+	*/
+	void(*get_absolute_rect)          (struct av_window* self, av_rect_p rect);
 
 	/*!
 	* \brief Converts a given rect in absolute coordinates according the root window from the tree
@@ -258,22 +256,10 @@ typedef struct av_window
 	*/
 	struct av_window* (*get_child_xy)  (struct av_window* self, int x, int y);
 
-	/*!
-	* \brief Captures window to receive all mouse event
-	* \param self is a reference to this object
-	*/
-	void (*capture)                    (struct av_window* self);
+	void (*move)                       (struct av_window* self, int x, int y);
 
-	/*!
-	* \brief Uncaptures window
-	* \param self is a reference to this object
-	*/
-	void (*uncapture)                  (struct av_window* self);
-
-	void (*scroll)                     (struct av_window* self, int x, int y);
-
-	void (*set_cursor)                 (struct av_window* self, av_video_cursor_shape_t cursor);
-	av_video_cursor_shape_t (*get_cursor) (struct av_window* self);
+	void (*set_cursor)                 (struct av_window* self, av_display_cursor_shape_t cursor);
+	av_display_cursor_shape_t (*get_cursor) (struct av_window* self);
 	void (*set_cursor_visible)         (struct av_window* self, av_bool_t visible);
 	av_bool_t (*is_cursor_visible)     (struct av_window* self);
 	void (*set_hover_delay)            (struct av_window* self, unsigned long hover_delay);
@@ -411,17 +397,15 @@ typedef struct av_window
 	*         - AV_TRUE to notify the event is processed and event bubbling to stop
 	*         - AV_FALSE the event is skipped or bubbling must continue
 	*/
-	av_bool_t (*on_paint)              (struct av_window* self, av_graphics_p graphics);
+	av_bool_t (*on_paint)             (struct av_window* self, av_graphics_p graphics);
 
 	/*!
-	* \brief Update event handler
+	* \brief On invalidated rect event handler
 	* \param self is a reference to this object
-	* \param graphics where this window can paint itself on this event
-	* \return av_bool_t
-	*         - AV_TRUE to notify the event is processed and event bubbling to stop
-	*         - AV_FALSE the event is skipped or bubbling must continue
+	* \param rect an invalidated rect in absolute coordinates
 	*/
-	av_bool_t (*on_update)             (struct av_window* self, av_video_surface_p video_surface, av_rect_p rect);
+	void (*on_invalidate)             (struct av_window* self, av_rect_p rect);
+
 } av_window_t, *av_window_p;
 
 /*!
@@ -430,7 +414,7 @@ typedef struct av_window
 *         - AV_OK on success
 *         - AV_EMEM on out of memory
 */
-AV_API av_result_t av_window_register_torba(void);
+AV_API av_result_t av_window_register_oop(av_oop_p);
 
 #ifdef __cplusplus
 }
