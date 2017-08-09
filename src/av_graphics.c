@@ -8,7 +8,7 @@
 /*                                                                   */
 /*********************************************************************/
 
-#include <av_video.h>
+#include <av_display.h>
 #include <av_graphics.h>
 #include <av_prefs.h>
 
@@ -430,48 +430,14 @@ static av_result_t av_graphics_set_font_size(av_graphics_p self, int size)
 	return AV_ESUPPORTED;
 }
 
-static void graphics_prefs_observer(void* param, const char* name, av_prefs_value_p value)
-{
-	av_prefs_p prefs;
-	av_graphics_p self = (av_graphics_p)param;
-	AV_UNUSED(name);
-	AV_UNUSED(value);
-
-	if (AV_OK == av_torb_service_addref("prefs", (av_service_p*)&prefs))
-	{
-		int xres, yres;
-		int xbase, ybase;
-		prefs->get_int(prefs, "system.video.xres", -1, &xres);
-		prefs->get_int(prefs, "system.video.yres", -1, &yres);
-		if (xres > 0 && yres > 0)
-		{
-			prefs->get_int(prefs, "graphics.xbase", xres, &xbase);
-			prefs->get_int(prefs, "graphics.ybase", yres, &ybase);
-			av_torb_service_release("prefs");
-			self->scale_x = (double)xres / xbase;
-			self->scale_y = (double)yres / ybase;
-		}
-	}
-}
-
 static void av_graphics_destructor(void* pobject)
 {
-	av_prefs_p prefs;
 	AV_UNUSED(pobject);
-
-	/* remove preference observers */
-	if (AV_OK == av_torb_service_addref("prefs", (av_service_p*)&prefs))
-	{
-		prefs->unregister_observer(prefs, graphics_prefs_observer);
-		av_torb_service_release("prefs");
-	}
 }
 
 /* Initializes memory given by the input pointer with the graphics class information */
 static av_result_t av_graphics_constructor(av_object_p pobject)
 {
-	av_result_t rc;
-	av_prefs_p prefs;
 	av_graphics_p self        = (av_graphics_p)pobject;
 
 	self->scale_x = self->scale_y = 1.0f;
@@ -515,31 +481,11 @@ static av_result_t av_graphics_constructor(av_object_p pobject)
 	self->select_font_face    = av_graphics_select_font_face;
 	self->set_font_size       = av_graphics_set_font_size;
 
-	/* register preference observers */
-	if (AV_OK != (rc = av_torb_service_addref("prefs", (av_service_p*)&prefs)))
-	{
-		return rc;
-	}
-
-	prefs->register_observer(prefs, "graphics.xbase", graphics_prefs_observer, self);
-	prefs->register_observer(prefs, "graphics.ybase", graphics_prefs_observer, self);
-	prefs->register_observer(prefs, "system.video.xres", graphics_prefs_observer, self);
-	prefs->register_observer(prefs, "system.video.yres", graphics_prefs_observer, self);
-	graphics_prefs_observer(self, AV_NULL, AV_NULL);
-	av_torb_service_release("prefs");
-
 	return AV_OK;
 }
 
-av_result_t av_graphics_register_torba(void)
+av_result_t av_graphics_register_oop(av_oop_p oop)
 {
-	av_result_t rc;
-	if (AV_OK != (rc = av_torb_register_class("graphics_surface", "surface",
-											  sizeof(av_graphics_surface_t),
-											  AV_NULL, AV_NULL)))
-	{
-		return rc;
-	}
-	return av_torb_register_class("graphics", AV_NULL, sizeof(av_graphics_t),
+	return oop->define_class(oop, "graphics", AV_NULL, sizeof(av_graphics_t),
 								  av_graphics_constructor, av_graphics_destructor);
 }

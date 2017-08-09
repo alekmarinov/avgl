@@ -9,12 +9,7 @@
 /*                                                                   */
 /*********************************************************************/
 
-#include <malloc.h>
-#include <string.h>
-#include <av_log.h>
-#include <av_window.h>
-#include <av_system.h>
-#include <av_graphics.h>
+#include <avgl.h>
 
 typedef struct _window_ctx_t
 {
@@ -24,16 +19,16 @@ typedef struct _window_ctx_t
 	av_bool_t             visible;
 	av_bool_t             clip_children;
 	int                   last_default_pos;
-	av_graphics_surface_p graphics_surface;
-	av_video_surface_p    video_surface;
-	av_log_p              log;
 	av_bool_t             painted;
 } window_ctx_t, *window_ctx_p;
+
+static const char* context = "window_ctx_p";
+#define O_context(o) (window_ctx_p)O_attr(o, context)
 
 /* Set a parent to the window */
 static av_result_t av_window_set_parent(av_window_p self, av_window_p parent)
 {
-	window_ctx_p ctx = (window_ctx_p)(self->context);
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx, "window is not properly initialized");
 	av_assert(!(parent && parent->is_parent(parent, self)), "cyclic window inheritance");
 
@@ -46,7 +41,6 @@ static av_result_t av_window_set_parent(av_window_p self, av_window_p parent)
 	if (parent)
 	{
 		/* add window to parent's children */
-		self->system = parent->system;
 		return parent->add_child_top(parent, self);
 	}
 
@@ -69,7 +63,7 @@ static av_bool_t av_window_is_parent(av_window_p self, av_window_p parent)
 /* Returns the direct parent of this window or AV_NULL if the window is root */
 static av_window_p av_window_get_parent(av_window_p self)
 {
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx, "window is not properly initialized");
 
 	return ctx->parent;
@@ -77,7 +71,7 @@ static av_window_p av_window_get_parent(av_window_p self)
 
 static av_list_p av_window_get_children(av_window_p self)
 {
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx, "window is not properly initialized");
 
 	return ctx->children;
@@ -87,7 +81,7 @@ static av_list_p av_window_get_children(av_window_p self)
 static av_result_t av_window_add_child(av_window_p self, av_window_p child, av_bool_t istop)
 {
 	av_result_t rc;
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx && ctx->children, "window is not properly initialized");
 	av_assert(child, "NULL child is not allowed");
 
@@ -100,7 +94,7 @@ static av_result_t av_window_add_child(av_window_p self, av_window_p child, av_b
 
 	if (AV_OK == rc)
 	{
-		window_ctx_p cctx = (window_ctx_p)(child->context); /* child context */
+		window_ctx_p cctx = O_context(child); /* child context */
 
 		/* set self parent to the new child */
 		cctx->parent = self;
@@ -128,11 +122,11 @@ static av_result_t av_window_add_child_bottom(av_window_p self, av_window_p chil
 */
 static av_bool_t av_window_remove_child(av_window_p self, av_window_p child)
 {
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	window_ctx_p cctx;
 	av_assert(ctx && ctx->children, "window is not properly initialized");
 	av_assert(child, "NULL child is not allowed");
-	cctx = (window_ctx_p)child->context;
+	cctx = O_context(child);
 
 	if (child->get_parent(child) != self) return AV_FALSE; /* self is not direct parent of the child */
 
@@ -154,7 +148,7 @@ static av_bool_t av_window_remove_child(av_window_p self, av_window_p child)
 /* Sets window's visibility status */
 static void av_window_set_visible(av_window_p self, av_bool_t visible)
 {
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_bool_t prevvisible;
 
 	av_assert(ctx, "window is not properly initialized");
@@ -163,22 +157,17 @@ static void av_window_set_visible(av_window_p self, av_bool_t visible)
 	
 	if (self->is_visible(self) != prevvisible)
 	{
-		/*self->update(self, AV_UPDATE_INVALIDATE);*/
 		av_rect_t rect;
-		self->get_rect(self, &rect);
-		rect.x = rect.y = 0;
-		self->rect_absolute(self, &rect);
-
-		av_assert(self->system, "System is not initialized yet");
-		if (self->system && rect.w && rect.h)
-			self->system->invalidate_rect(self->system, &rect);
+		self->get_absolute_rect(self, &rect);
+		if (rect.w && rect.h)
+			self->on_invalidate(self, &rect);
 	}
 }
 
 /* Returns the window's visibility status */
 static av_bool_t av_window_is_visible(av_window_p self)
 {
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx, "window is not properly initialized");
 
 	/* a window is visible if all its parents are visible */
@@ -191,7 +180,7 @@ static av_bool_t av_window_is_visible(av_window_p self)
 /* Tells this window to clip its children or not */
 static void av_window_set_clip_children(av_window_p self, av_bool_t clipped)
 {
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx, "window is not properly initialized");
 	ctx->clip_children = clipped;
 }
@@ -199,7 +188,7 @@ static void av_window_set_clip_children(av_window_p self, av_bool_t clipped)
 /* Return AV_TRUE if the window is clipping its children, AV_FALSE otherwise */
 static av_bool_t av_window_are_children_clipped(av_window_p self)
 {
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx, "window is not properly initialized");
 	return ctx->clip_children;
 }
@@ -207,122 +196,16 @@ static av_bool_t av_window_are_children_clipped(av_window_p self)
 /* Returns the window's rectangle */
 static void av_window_get_rect(av_window_p self, av_rect_p rect)
 {
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx, "window is not properly initialized");
 	av_rect_copy(rect, &ctx->rect);
-/*	if (ctx->parent)
-	{
-		rect->x += ctx->parent->origin_x;
-		rect->y += ctx->parent->origin_y;
-	}*/
-}
-
-/* Repaints graphics buffer */
-static av_result_t av_window_repaint(av_window_p self)
-{
-	if (self->on_paint)
-	{
-		av_graphics_p graphics;
-		av_result_t rc;
-		av_rect_t rect;
-		window_ctx_p ctx = (window_ctx_p)self->context;
-		av_system_p sys = (av_system_p)self->system;
-	
-		self->get_rect(self, &rect);
-		if (!rect.w || !rect.h)
-			return AV_EARG;
-	
-		rect.x = rect.y = 0;
-		if (AV_OK != (rc = sys->get_graphics(sys, &graphics)))
-		{
-			ctx->log->error(ctx->log, "av_window.c:%d Unable to obtain graphics object (rc = %d)", __LINE__, rc);
-			return rc;
-		}
-		
-		/* prepare graphics buffer */
-		if (AV_NULL == ctx->graphics_surface)
-		{
-			av_video_p video;
-	
-			/* create new graphics buffer */
-			sys->get_video(sys, &video);
-			if (AV_OK != (rc = video->create_surface(video, rect.w, rect.h, &ctx->video_surface)))
-			{
-				ctx->log->error(ctx->log, "av_window.c:%d Unable to create graphics surface (rc = %d)", __LINE__, rc);
-				return rc;
-			}
-			
-			if (AV_OK != (rc = graphics->wrap_surface(graphics, (av_surface_p)ctx->video_surface, &ctx->graphics_surface)))
-			{
-				ctx->log->error(ctx->log, "av_window.c:%d Unable to wrap video surface (rc = %d)", __LINE__, rc);
-				return rc;
-			}
-		}
-		else
-		{
-			int gw, gh;
-			((av_surface_p)ctx->graphics_surface)->get_size((av_surface_p)ctx->graphics_surface, &gw, &gh);
-			if (gw != rect.w || gh != rect.h)
-			{
-				/* resize graphics buffer */
-				if (AV_OK != (rc = ((av_surface_p)ctx->graphics_surface)->set_size((av_surface_p)ctx->graphics_surface, rect.w, rect.h)))
-				{
-					ctx->log->error(ctx->log, "av_window.c:%d Unable to resize graphics buffer (rc = %d)", __LINE__, rc);
-					return rc;
-				}
-			}
-		}
-
-		// FIXME: Brake dependency with video
-		if (ctx->video_surface)
-			ctx->video_surface->fill_rect(ctx->video_surface, &rect, 0, 0, 0, 0);
-
-		graphics->begin(graphics, ctx->graphics_surface);
-		graphics->set_clip(graphics, &rect);
-		self->on_paint(self, graphics);
-		graphics->end(graphics);
-	}
-	return AV_OK;
-}
-
-static void av_window_update(av_window_p self, av_window_update_t window_update)
-{
-	av_bool_t isvisible = self->is_visible(self);
-	if (isvisible || AV_UPDATE_REPAINT == window_update)
-	{
-		window_ctx_p ctx = (window_ctx_p)self->context;
-		av_rect_t rect;
-		if (AV_UPDATE_REPAINT == window_update || !ctx->painted)
-		{
-			av_window_repaint(self);
-			ctx->painted = AV_TRUE;
-		}
-
-		if (isvisible)
-		{
-			self->get_rect(self, &rect);
-			rect.x = rect.y = 0;
-			self->rect_absolute(self, &rect);
-			av_assert(self->system, "System is not initialized yet");
-			if (self->system && rect.w && rect.h)
-				self->system->invalidate_rect(self->system, &rect);
-		}
-	}
-}
-
-/* Gets window graphics buffer */
-static av_result_t av_window_get_surface(av_window_p self, av_surface_p* ppsurface)
-{
-	window_ctx_p ctx = (window_ctx_p)self->context;
-	*ppsurface = (av_surface_p)ctx->video_surface;
-	return AV_OK;
 }
 
 /* Raises or lower window according israise parameter */
 static av_result_t av_window_raise_lower(av_window_p self, av_bool_t israise)
 {
 	av_result_t rc = AV_OK;
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_window_p parent;
 	av_assert(ctx, "window is not properly initialized");
 
@@ -337,7 +220,13 @@ static av_result_t av_window_raise_lower(av_window_p self, av_bool_t israise)
 			rc = parent->add_child_bottom(parent, self);
 		
 		if (AV_OK == rc)
-			self->update(self, AV_UPDATE_INVALIDATE);
+		{
+			av_rect_t rect;
+			self->get_absolute_rect(self, &rect);
+			if (rect.w && rect.h)
+				self->on_invalidate(self, &rect);
+		}
+
 	}
 	return rc;
 }
@@ -371,11 +260,12 @@ static void av_window_detach(av_window_p self)
 static void av_window_destructor(void* pobject)
 {
 	av_window_p self = (av_window_p)pobject;
-	window_ctx_p ctx = (window_ctx_p)self->context;
-	av_system_p sys = (av_system_p)self->system;
+	window_ctx_p ctx = O_context(self);
 	av_list_p children;
+	av_rect_t rect;
 	av_assert(ctx && ctx->children, "window is not properly initialized");
-	sys->removing_window(sys, self);
+	self->get_absolute_rect(self, &rect);
+	self->on_invalidate(self, &rect);
 	children = ctx->children;
 	self->detach(self);
 	while (children->size(children) > 0)
@@ -386,14 +276,6 @@ static void av_window_destructor(void* pobject)
 		O_destroy(child);
 	}
 	children->destroy(children);
-	
-	if (ctx->graphics_surface)
-		O_destroy(ctx->graphics_surface);
-		
-	if (ctx->video_surface)
-		O_destroy(ctx->video_surface);
-
-	av_torb_service_release("log");
 	free(ctx);
 }
 
@@ -410,6 +292,17 @@ static av_window_p av_window_get_root(av_window_p self)
 		return self;
 }
 */
+
+
+/*
+* Returns the window rectangle in absolute coordinates
+*/
+static void av_window_get_absolute_rect(av_window_p self, av_rect_p rect)
+{
+	self->get_rect(self, rect);
+	rect->x = rect->y = 0;
+	self->rect_absolute(self, rect);
+}
 
 /*
 * Converts a given rect in absolute coordinates according the root window from the tree
@@ -477,7 +370,7 @@ static av_bool_t av_window_point_inside(av_window_p self, int x, int y)
 
 static void av_window_manage_rect(av_window_p self, av_rect_p rect)
 {
-	window_ctx_p ctx = (window_ctx_p)(self->context);
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx, "window is not properly initialized");
 
 	if (rect->w == AV_DEFAULT)
@@ -519,8 +412,9 @@ static void av_window_manage_rect(av_window_p self, av_rect_p rect)
 /* Sets new window rectangle */
 static av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 {
+	av_rect_t invrect;
 	av_rect_t oldrect;
-	window_ctx_p ctx = (window_ctx_p)(self->context);
+	window_ctx_p ctx = O_context(self);
 	av_list_p children = self->get_children(self);
 	av_window_p parent =          /* parent window */
 		self->get_parent(self);
@@ -539,12 +433,14 @@ static av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 	{
 		/* set newrect to the root window */
 		av_rect_copy(&ctx->rect, newrect);
-		self->update(self, AV_UPDATE_REPAINT);
+		self->get_absolute_rect(self, &invrect);
+		self->on_invalidate(self, &invrect);
 		return AV_OK;
 	}
 
 	/* invalidate old window rect */
-	self->update(self, AV_UPDATE_INVALIDATE);
+	self->get_absolute_rect(self, &invrect);
+	self->on_invalidate(self, &invrect);
 
 	/* if children not clipped, change their positions */
 	if (AV_FALSE == self->are_children_clipped(self))
@@ -565,13 +461,8 @@ static av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 	av_rect_copy(&ctx->rect, newrect);
 	if (oldrect.w != newrect->w || oldrect.h != newrect->h)
 	{
-		/* set new window rect */
-		self->update(self, AV_UPDATE_REPAINT);
-	}
-	else
-	{
-		/* set new window rect */
-		self->update(self, AV_UPDATE_INVALIDATE);
+		self->get_absolute_rect(self, &invrect);
+		self->on_invalidate(self, &invrect);
 	}
 
 	return AV_OK;
@@ -580,7 +471,7 @@ static av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 static av_window_p av_window_get_child_xy(av_window_p self, int x, int y)
 {
 	av_list_p children;
-	window_ctx_p ctx = (window_ctx_p)self->context;
+	window_ctx_p ctx = O_context(self);
 	av_assert(ctx && ctx->children, "window is not properly initialized");
 	children = ctx->children;
 	
@@ -598,33 +489,21 @@ static av_window_p av_window_get_child_xy(av_window_p self, int x, int y)
 	return AV_NULL;
 }
 
-static void av_window_capture(av_window_p self)
+static void av_window_move(av_window_p self, int x, int y)
 {
-	av_system_p sys = (av_system_p)self->system;
-	av_assert(sys, "context can't be NULL");
-	sys->set_capture(sys, self);
-}
-
-static void av_window_uncapture(av_window_p self)
-{
-	av_system_p sys = (av_system_p)self->system;
-	av_assert(sys, "context can't be NULL");
-	sys->set_capture(sys, AV_NULL);
-}
-
-static void av_window_scroll(av_window_p self, int x, int y)
-{
+	av_rect_t invrect;
 	self->origin_x = x;
 	self->origin_y = y;
-	self->update(self, AV_UPDATE_INVALIDATE);
+	self->get_absolute_rect(self, &invrect);
+	self->on_invalidate(self, &invrect);
 }
 
-static void av_window_set_cursor(av_window_p self, av_video_cursor_shape_t cursor)
+static void av_window_set_cursor(av_window_p self, av_display_cursor_shape_t cursor)
 {
 	self->cursor = cursor;
 }
 
-static av_video_cursor_shape_t av_window_get_cursor(av_window_p self)
+static av_display_cursor_shape_t av_window_get_cursor(av_window_p self)
 {
 	return self->cursor;
 }
@@ -715,17 +594,11 @@ static av_bool_t av_window_on_paint(av_window_p self, av_graphics_p graphics)
 	return AV_FALSE;
 }
 
-static av_bool_t av_window_on_update(av_window_p self, av_video_surface_p video_surface, av_rect_p rect)
+static av_bool_t av_window_on_invalidate(av_window_p self, av_rect_p rect)
 {
-	av_rect_t srcrect;
-	window_ctx_p ctx = (window_ctx_p)(self->context);
-	av_rect_init(&srcrect, 0, 0, rect->w, rect->h);
-	self->rect_absolute(self, &srcrect);
-	srcrect.x = rect->x - srcrect.x;
-	srcrect.y = rect->y - srcrect.y;
-	if (ctx->video_surface)
-		video_surface->blit(video_surface, rect, (av_surface_p)ctx->video_surface, &srcrect);
-	return AV_TRUE;
+	AV_UNUSED(self);
+	AV_UNUSED(rect);
+	return AV_FALSE;
 }
 
 static av_bool_t av_window_on_event(av_window_p self, av_event_p event)
@@ -777,8 +650,9 @@ static av_result_t av_window_constructor(av_object_p object)
 	av_window_p self = (av_window_p)object;
 
 	/* initializes self */
-	ctx = calloc(1, sizeof(window_ctx_t));
+	ctx = (window_ctx_p)av_calloc(1, sizeof(window_ctx_t));
 	if (!ctx) return AV_EMEM;
+	O_set_attr(self, context, ctx);
 	if (AV_OK != (rc = av_list_create(&ctx->children)))
 	{
 		free(ctx);
@@ -788,12 +662,10 @@ static av_result_t av_window_constructor(av_object_p object)
 	ctx->clip_children          = AV_TRUE; /* clip children by default */
 	self->origin_x              = self->origin_y = 0;
 	self->hover_delay           = 0;
-	self->cursor                = AV_VIDEO_CURSOR_DEFAULT;
+	self->cursor                = AV_DISPLAY_CURSOR_DEFAULT;
 	self->cursor_visible        = AV_TRUE;
 	self->bubble_events         = AV_TRUE;
 	self->handle_events         = AV_TRUE;
-	self->context               = ctx;
-	self->data                  = AV_NULL;
 	self->dispatcher            = AV_NULL;
 	self->set_parent            = av_window_set_parent;
 	self->get_parent            = av_window_get_parent;
@@ -808,17 +680,14 @@ static av_result_t av_window_constructor(av_object_p object)
 	self->are_children_clipped  = av_window_are_children_clipped;
 	self->get_rect              = av_window_get_rect;
 	self->set_rect              = av_window_set_rect;
+	self->get_absolute_rect     = av_window_get_absolute_rect;
 	self->rect_absolute         = av_window_rect_absolute;
 	self->point_inside          = av_window_point_inside;
-	self->update                = av_window_update;
-	self->get_surface           = av_window_get_surface;
 	self->raise_top             = av_window_raise_top;
 	self->lower_bottom          = av_window_lower_bottom;
 	self->detach                = av_window_detach;
 	self->get_child_xy          = av_window_get_child_xy;
-	self->capture               = av_window_capture;
-	self->uncapture             = av_window_uncapture;
-	self->scroll                = av_window_scroll;
+	self->move                  = av_window_move;
 	self->set_cursor            = av_window_set_cursor;
 	self->get_cursor            = av_window_get_cursor;
 	self->set_cursor_visible    = av_window_set_cursor_visible;
@@ -841,19 +710,13 @@ static av_result_t av_window_constructor(av_object_p object)
 	self->on_focus             = av_window_on_focus;
 	self->on_user              = av_window_on_user;
 	self->on_paint             = av_window_on_paint;
-	self->on_update            = av_window_on_update;
-	
-	if (AV_OK != (rc = av_torb_service_addref("log", (av_service_p*)&ctx->log)))
-	{
-		free(ctx);
-		return rc;
-	}
+	self->on_invalidate        = av_window_on_invalidate;
 
 	return AV_OK;
 }
 
-av_result_t av_window_register_torba( void )
+av_result_t av_window_register_oop(av_oop_p oop)
 {
-	return av_torb_register_class("window", AV_NULL, sizeof(av_window_t),
+	return oop->define_class(oop, "window", AV_NULL, sizeof(av_window_t),
 								  av_window_constructor, av_window_destructor);
 }

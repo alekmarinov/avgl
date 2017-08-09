@@ -169,10 +169,11 @@ static av_result_t av_graphics_surface_cairo_create_pattern(av_graphics_surface_
 	av_graphics_pattern_p pattern;
 	cairo_surface_t* cairo_surface = (cairo_surface_t*)O_context(self);
     cairo_pattern_t *p = cairo_pattern_create_for_surface(cairo_surface);
+	av_oop_p oop = O_oop(self);
 	if (!p)
 		return AV_EMEM;
 
-	if (AV_OK != (rc = av_torb_create_object("graphics_pattern_cairo", (av_object_p*)&pattern)))
+	if (AV_OK != (rc = oop->new(oop, "graphics_pattern_cairo", (av_object_p*)&pattern)))
 	{
 		cairo_pattern_destroy(p);
 		return rc;
@@ -220,10 +221,10 @@ static av_result_t av_graphics_surface_cairo_constructor(av_object_p object)
 	return AV_OK;
 }
 
-/* Registers Cairo video surface class into TORBA class repository */
-av_result_t av_graphics_surface_cairo_register_torba(void)
+/* Registers Cairo video surface class into OOP class repository */
+av_result_t av_graphics_surface_cairo_register_oop(av_oop_p oop)
 {
-	return av_torb_register_class("graphics_surface_cairo", "graphics_surface",
+	return oop->define_class(oop, "graphics_surface_cairo", "graphics_surface",
 								  sizeof(av_graphics_surface_cairo_t),
 								  av_graphics_surface_cairo_constructor,
 								  av_graphics_surface_cairo_destructor);

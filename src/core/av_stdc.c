@@ -25,6 +25,11 @@ void av_strncpy(char* dst, const char* src, int size)
 	strcpy(dst, src);
 }
 
+void av_memcpy(unsigned char* dst, unsigned char* src, int size)
+{
+	memcpy(dst, src, size);
+}
+
 int av_strcmp(const char* str1, const char* str2)
 {
 	return strcmp(str1, str2);

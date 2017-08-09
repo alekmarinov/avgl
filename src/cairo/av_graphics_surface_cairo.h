@@ -13,8 +13,9 @@
 #define __AV_GRAPHICS_SURFACE_CAIRO_H
 
 #include <av_graphics.h>
+#include <av_oop.h>
 
-av_result_t av_graphics_surface_cairo_register_torba(void);
+av_result_t av_graphics_surface_cairo_register_oop(av_oop_p);
 av_result_t av_graphics_surface_cairo_init_class(void*, const char*);
 
 typedef struct av_graphics_surface_cairo

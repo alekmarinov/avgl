@@ -8,11 +8,14 @@
 /*                                                                   */
 /*********************************************************************/
 
+#ifdef _MSC_VER
+# define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <malloc.h>
-#include <string.h>
+#include <av_stdc.h>
 #include <av_log.h>
 
 #include <av_thread.h>
@@ -65,7 +68,7 @@ static av_result_t av_log_method_file(void* param, const char* message)
 	av_assert(file, "log file is not initialized");
 	if (message)
 	{
-		int len = strlen(message);
+		int len = av_strlen(message);
 		if (len != fprintf(file, "%s\n", message))
 		{
 			return AV_EWRITE;
@@ -86,7 +89,7 @@ static av_result_t av_log_get_logger(av_log_p self,
 	av_logger_p alogger = (av_logger_p)O_context(self);
 	while (alogger)
 	{
-		if ( 0 == strcmp(name, alogger->name) )
+		if ( 0 == av_strcmp(name, alogger->name) )
 		{
 			*pplogger = alogger;
 			return AV_OK;
@@ -129,7 +132,7 @@ static av_result_t av_log_add_custom_logger(av_log_p self,
 	if (!logger)
 		return AV_EMEM;
 	
-	strncpy(logger->name, name, MAX_NAME_SIZE);
+	av_strncpy(logger->name, name, MAX_NAME_SIZE);
 	logger->verbosity     = verbosity;
 	logger->log           = logmethod;
 	logger->param         = param;
@@ -152,7 +155,7 @@ static av_result_t av_log_set_verbosity(av_log_p self,
 	logger = (av_logger_p)O_context(self);
 	while (logger)
 	{
-		if (!name || 0 == strcmp(name, logger->name))
+		if (!name || 0 == av_strcmp(name, logger->name))
 		{
 			logger->verbosity = verbosity;
 			rc = AV_OK;
@@ -191,8 +194,8 @@ static void av_log_format_message(char* buffer,
 		{"silent", "error", "warn", "info", "debug"};
 
 	/* gets the current date/time as string in format "Wed Jun 30 21:49:08 1993\n" */
-	char* timebuf = strdup(asctime(localtime(&now)));
-	int lastchr = strlen(timebuf)-1;
+	char* timebuf = av_strdup(asctime(localtime(&now)));
+	int lastchr = av_strlen(timebuf)-1;
 	/* removes the last character '\n' (newline) resulted by the asctime function */
 	if (timebuf[lastchr] == '\n') /* doesn't heart to check if really the char \n is there */
 	{
@@ -232,7 +235,7 @@ static av_result_t av_log_log(av_log_p self,
 {                                                       \
 	va_list args;                                       \
 	char buffer[MAX_LOG_MESSAGE_SIZE];                  \
-	memset(buffer, 0, MAX_LOG_MESSAGE_SIZE);            \
+	av_memset(buffer, 0, MAX_LOG_MESSAGE_SIZE);         \
 	va_start(args, fmt);                                \
 	vsnprintf(buffer, MAX_LOG_MESSAGE_SIZE, fmt, args); \
 	va_end(args);                                       \
@@ -282,16 +285,16 @@ static av_result_t av_log_constructor(av_object_p object)
 }
 
 /* Registers log class into TORBA */
-av_result_t av_log_register_torba(void)
+av_result_t av_log_register_oop(av_oop_p oop)
 {
 	av_service_p log;
 	av_result_t rc;
 
-	if (AV_OK != (rc = av_torb_register_class("log", "service", sizeof(av_log_t), av_log_constructor, av_log_destructor)))
+	if (AV_OK != (rc = oop->define_class(oop, "log", "service", sizeof(av_log_t), av_log_constructor, av_log_destructor)))
 		return rc;
 
-	if (AV_OK != (rc = av_torb_create_object("log", (av_object_p*)&log)))
+	if (AV_OK != (rc = oop->new(oop, "log", (av_object_p*)&log)))
 		return rc;
 
-	return av_torb_service_register("log", log);
+	return oop->register_service(oop, "log", log);
 }

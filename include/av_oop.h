@@ -216,6 +216,9 @@ typedef struct _av_object_t
 /*! A shortcut to \c release method of a service */
 #define O_release(o)         { ((av_service_p)(o))->release((av_service_p)(o)); }
 
+/*! Refers oop from object */
+#define O_oop(o)             ((av_object_p)o)->classref->oop
+
 /*!
 * \brief The super class of all avgl services
 */

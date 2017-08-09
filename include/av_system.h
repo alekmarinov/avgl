@@ -18,10 +18,26 @@
 #include <av_display.h>
 #include <av_input.h>
 #include <av_timer.h>
+#include <av_window.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* forward declaration */
+struct av_system_t;
+
+/*!
+* \brief visible interface
+*
+*/
+typedef struct av_visible_t
+{
+	av_window_t window;
+
+	struct av_system_t* system;
+} av_visible_t, *av_visible_p;
+
 
 /*!
 * \brief system interface
@@ -62,6 +78,7 @@ typedef struct av_system
 	*/
 	void (*loop)                  (struct av_system* self);
 
+	av_result_t (*create_visible) (struct av_system* self, av_visible_p parent, av_rect_p rect, av_visible_p *pvisible);
 } av_system_t, *av_system_p;
 
 /*!
@@ -77,3 +94,6 @@ AV_API av_result_t av_system_register_oop(av_oop_p);
 #endif
 
 #endif /* __AV_SYSTEM_H */
+
+static av_result_t 
+av_visible_constructor(av_object_p object);

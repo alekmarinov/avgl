@@ -15,6 +15,7 @@
 #define __AV_GRAPHICS_H
 
 #include <av.h>
+#include <av_oop.h>
 #include <av_surface.h>
 
 #ifdef __cplusplus
@@ -722,12 +723,12 @@ typedef struct av_graphics
 } av_graphics_t, *av_graphics_p;
 
 /*!
-* \brief Registers graphics class into TORBA
+* \brief Registers graphics class into OOP
 * \return av_result_t
 *         - AV_OK on success
 *         - AV_EMEM on out of memory
 */
-AV_API av_result_t av_graphics_register_torba(void);
+AV_API av_result_t av_graphics_register_oop(av_oop_p);
 
 #ifdef __cplusplus
 }

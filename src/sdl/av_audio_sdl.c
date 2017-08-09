@@ -10,8 +10,8 @@
 
 #ifdef WITH_SYSTEM_SDL
 
+#include <av_stdc.h>
 #include <malloc.h>
-#include <av_log.h>
 #include <av_audio.h>
 #include <av_media.h>
 #include <av_thread.h>
@@ -53,14 +53,13 @@ typedef struct av_audio_handle
 	struct av_audio_handle* next;
 } av_audio_handle_t, *av_audio_handle_p;
 
-static av_log_p sys_log = AV_NULL;
 static av_audio_handle_p av_audio_root = AV_NULL;
 
 static int SDL_AUDIO_FORMAT(av_audio_format_t format)
 {
 	switch(format)
 	{
-		default: sys_log->error(sys_log, "Unhandled audio format: '%d'", format);
+		default: // FIXME: sys_log->error(sys_log, "Unhandled audio format: '%d'", format);
 		case AV_AUDIO_SIGNED_16: format = AUDIO_S16; break;
 		case AV_AUDIO_UNSIGNED_16: format = AUDIO_U16; break;
 		case AV_AUDIO_SIGNED_8: format = AUDIO_S8; break;
@@ -116,7 +115,7 @@ static void default_sdl_audio_callback(void* userdata, unsigned char* data, int 
 			{
 				if (p->media)
 					p->media->synchronize_audio(p->media, p->frame_audio);
-				memcpy(&p->frame_audio_out, p->frame_audio, av_offsetof(p->frame_audio,data) + p->frame_audio->size);
+				av_memcpy((unsigned char*)&p->frame_audio_out, (unsigned char*)p->frame_audio, av_offsetof(p->frame_audio,data) + p->frame_audio->size);
 				p->frame_audio_out_index = 0;
 				free(p->frame_audio);
 			}
@@ -184,10 +183,10 @@ static av_result_t av_audio_sdl_write(av_audio_p self, struct av_audio_handle* p
 			phandle->cvt.buf = malloc(frame_audio->size * phandle->cvt.len_mult);
 			if (!phandle->cvt.buf)
 				return AV_EMEM;
-			memcpy(phandle->cvt.buf, &frame_audio->data, frame_audio->size);
+			av_memcpy((unsigned char *)phandle->cvt.buf, (unsigned char *)&frame_audio->data, frame_audio->size);
 			SDL_ConvertAudio(&phandle->cvt);
 			src = phandle->cvt.buf;
-			length = frame_audio->size * phandle->cvt.len_ratio;
+			length = (int)((double)frame_audio->size * phandle->cvt.len_ratio);
 			while (length > 0)
 			{
 				int size;
@@ -196,8 +195,8 @@ static av_result_t av_audio_sdl_write(av_audio_p self, struct av_audio_handle* p
 					return AV_EMEM;
 				size = AV_MIN(AV_AUDIO_FRAME_SIZE,length);
 				/* FIXME: adjust pts */
-				memcpy(frame_audio_new, frame_audio, av_offsetof(frame_audio,data));
-				memcpy(frame_audio_new->data, src, size);
+				av_memcpy((unsigned char *)frame_audio_new, (unsigned char *)frame_audio, av_offsetof(frame_audio,data));
+				av_memcpy((unsigned char *)frame_audio_new->data, src, size);
 				frame_audio_new->size = size;
 				phandle->queue->push(phandle->queue, frame_audio_new);
 				length -= size;
@@ -210,7 +209,7 @@ static av_result_t av_audio_sdl_write(av_audio_p self, struct av_audio_handle* p
 			frame_audio_new = (av_frame_audio_p)malloc(av_offsetof(frame_audio,data) + frame_audio->size);
 			if (!frame_audio_new)
 				return AV_EMEM;
-			memcpy(frame_audio_new, frame_audio, av_offsetof(frame_audio,data) + frame_audio->size);
+			av_memcpy((unsigned char *)frame_audio_new, (unsigned char *)frame_audio, av_offsetof(frame_audio,data) + frame_audio->size);
 			phandle->queue->push(phandle->queue, frame_audio_new);
 		}
 	}
@@ -305,7 +304,7 @@ static av_result_t av_audio_sdl_open(struct av_audio* self, int samplerate, int 
 			SDL_AUDIO_FORMAT(defformat), defchannels, defsamplerate))
 		{
 			free(phandle);
-			sys_log->error(sys_log, "SDL_BuildAudioCVT failed: '%s'", SDL_GetError());
+			// FIXME: sys_log->error(sys_log, "SDL_BuildAudioCVT failed: '%s'", SDL_GetError());
 			return AV_ESUPPORTED;
 		}
 	}
@@ -389,7 +388,6 @@ static void av_audio_sdl_destructor(void* object)
 			ctx->mtx->destroy(ctx->mtx);
 			ctx->mtx = AV_NULL;
 		}
-		av_torb_service_release("log");
 		free(ctx);
 	}
 }
@@ -409,7 +407,7 @@ static void av_audio_sdl_disable(av_audio_p self)
 static av_result_t av_audio_sdl_enable(av_audio_p self)
 {
 	int freq;
-	int format;
+	av_audio_format_t format;
 	int nchannels;
 	SDL_AudioSpec desired;
 	SDL_AudioSpec actual;
@@ -417,8 +415,8 @@ static av_result_t av_audio_sdl_enable(av_audio_p self)
 
 	if (!ctx->enabled)
 	{
-		memset(&desired, 0, sizeof(SDL_AudioSpec));
-		memset(&actual, 0, sizeof(SDL_AudioSpec));
+		av_memset(&desired, 0, sizeof(SDL_AudioSpec));
+		av_memset(&actual, 0, sizeof(SDL_AudioSpec));
 
 		self->get_samplerate(self, &freq);
 		desired.freq = freq;
@@ -435,25 +433,25 @@ static av_result_t av_audio_sdl_enable(av_audio_p self)
 
 		if (SDL_OpenAudio(&desired, &actual) < 0)
 		{
-			sys_log->error(sys_log, "SDL_OpenAudio failed: '%s'", SDL_GetError());
+			// FIXME: sys_log->error(sys_log, "SDL_OpenAudio failed: '%s'", SDL_GetError());
 			goto enable_error;
 		}
 
 		if (desired.format != actual.format)
 		{
-			sys_log->error(sys_log, "Unsupported audio format: '%d'", desired.format);
+			// FIXME: sys_log->error(sys_log, "Unsupported audio format: '%d'", desired.format);
 			goto enable_error_close;
 		}
 
 		if (desired.channels != actual.channels)
 		{
-			sys_log->error(sys_log, "Unsupported audio channels: '%d'", desired.channels);
+			// FIXME: sys_log->error(sys_log, "Unsupported audio channels: '%d'", desired.channels);
 			goto enable_error_close;
 		}
 
 		if (desired.freq != actual.freq)
 		{
-			sys_log->error(sys_log, "Unsupported audio samplerate: '%d'", desired.freq);
+			// FIXME: sys_log->error(sys_log, "Unsupported audio samplerate: '%d'", desired.freq);
 			goto enable_error_close;
 		}
 
@@ -471,7 +469,6 @@ enable_error:
 /* Constructor */
 static av_result_t av_audio_sdl_constructor(av_object_p object)
 {
-	av_result_t rc;
 	av_audio_p self = (av_audio_p)object;
 	av_audio_sdl_ctx_p ctx = (av_audio_sdl_ctx_p)malloc(sizeof(av_audio_sdl_ctx_t));
 
@@ -499,19 +496,13 @@ static av_result_t av_audio_sdl_constructor(av_object_p object)
 	self->enable                = av_audio_sdl_enable;
 	self->disable               = av_audio_sdl_disable;
 
-	if (AV_OK != (rc = av_torb_service_addref("log", (av_service_p*)&sys_log)))
-	{
-		free(ctx);
-		return rc;
-	}
-
 	return AV_OK;
 }
 
-/* Registers sdl audio class into TORBA class repository */
-av_result_t av_audio_sdl_register_torba(void)
+/* Registers sdl audio class into oop class repository */
+av_result_t av_audio_sdl_register_oop(av_oop_p oop)
 {
-	return av_torb_register_class("audio_sdl", "audio", sizeof(av_audio_t),
+	return oop->define_class(oop, "audio_sdl", "audio", sizeof(av_audio_t),
 								  av_audio_sdl_constructor, av_audio_sdl_destructor);
 }
 

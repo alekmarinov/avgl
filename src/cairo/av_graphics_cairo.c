@@ -13,7 +13,7 @@
 
 #include <malloc.h>
 #include <math.h>
-#include <av_video.h>
+#include <av_display.h>
 #include <av_graphics.h>
 #include <av_log.h>
 #include <cairo.h>
@@ -120,7 +120,8 @@ static av_result_t av_graphics_cairo_create_surface(av_graphics_p self,
 {
 	av_result_t rc;
 	av_graphics_surface_p surface;
-	if (AV_OK != (rc = av_torb_create_object("graphics_surface_cairo", (av_object_p*)&surface)))
+	av_oop_p oop = O_oop(self);
+	if (AV_OK != (rc = oop->new(oop, "graphics_surface_cairo", (av_object_p*)&surface)))
 	{
 		return rc;
 	}
@@ -142,6 +143,7 @@ static av_result_t av_graphics_cairo_create_surface_file(av_graphics_p self, con
 	av_result_t rc;
 	av_graphics_surface_p surface;
 	cairo_surface_t* image;
+	av_oop_p oop = O_oop(self);
 
 	/* FIXME: Detect file format */
 	image = cairo_image_surface_create_from_png(filename);
@@ -149,7 +151,7 @@ static av_result_t av_graphics_cairo_create_surface_file(av_graphics_p self, con
 		return AV_EFOUND;
 
 	rc = av_cairo_error_check("cairo_image_surface_create_from_png", cairo_surface_status(image));
-	if (AV_OK != rc || AV_OK != (rc = av_torb_create_object("graphics_surface_cairo", (av_object_p*)&surface)))
+	if (AV_OK != rc || AV_OK != (rc = oop->new(oop, "graphics_surface_cairo", (av_object_p*)&surface)))
 	{
 		cairo_surface_destroy(image);
 		return rc;
@@ -182,7 +184,8 @@ static av_result_t av_graphics_cairo_wrap_surface(av_graphics_p self,
 	av_result_t rc;
 	int width, height;
 	av_graphics_surface_cairo_p surface;
-	if (AV_OK != (rc = av_torb_create_object("graphics_surface_cairo", (av_object_p*)&surface)))
+	av_oop_p oop = O_oop(self);
+	if (AV_OK != (rc = oop->new(oop, "graphics_surface_cairo", (av_object_p*)&surface)))
 	{
 		return rc;
 	}
@@ -277,9 +280,10 @@ static av_result_t av_graphics_cairo_pop_group(av_graphics_p self,
 	cairo_t* cairo = O_context(self);
 	cairo_pattern_t* p;
 	av_graphics_pattern_p pattern;
+	av_oop_p oop = O_oop(self);
 	av_assert(cairo, "calling `pop_group' method before `begin'");
 
-	if (AV_OK != (rc = av_torb_create_object("graphics_pattern_cairo", (av_object_p*)&pattern)))
+	if (AV_OK != (rc = oop->new(oop, "graphics_pattern_cairo", (av_object_p*)&pattern)))
 		return rc;
 
 	p = cairo_pop_group(cairo);
@@ -304,9 +308,9 @@ static av_result_t av_graphics_cairo_create_pattern_rgba(av_graphics_p self,
 	av_result_t rc;
 	av_graphics_pattern_p pattern;
 	cairo_pattern_t* p;
-	AV_UNUSED(self);
+	av_oop_p oop = O_oop(self);
 	p = cairo_pattern_create_rgba(r, g, b, a);
-	if (AV_OK != (rc = av_torb_create_object("graphics_pattern_cairo", (av_object_p*)&pattern)))
+	if (AV_OK != (rc = oop->new(oop, "graphics_pattern_cairo", (av_object_p*)&pattern)))
 	{
 		cairo_pattern_destroy(p);
 		return rc;
@@ -327,9 +331,9 @@ static av_result_t av_graphics_cairo_create_pattern_linear
 	av_result_t rc;
 	av_graphics_pattern_p pattern;
 	cairo_pattern_t* p;
-	AV_UNUSED(self);
+	av_oop_p oop = O_oop(self);
 	p = cairo_pattern_create_linear(xx0, yy0, xx1, yy1);
-	if (AV_OK != (rc = av_torb_create_object("graphics_pattern_cairo", (av_object_p*)&pattern)))
+	if (AV_OK != (rc = oop->new(oop, "graphics_pattern_cairo", (av_object_p*)&pattern)))
 	{
 		cairo_pattern_destroy(p);
 		return rc;
@@ -351,11 +355,12 @@ static av_result_t av_graphics_cairo_create_pattern_radial
 	av_result_t rc;
 	av_graphics_pattern_p pattern;
 	cairo_pattern_t* p = cairo_pattern_create_radial(cxx0, cyy0, r0, cxx1, cyy1, r1);
+	av_oop_p oop = O_oop(self);
 	AV_UNUSED(self);
 	if (!p)
 		return AV_EMEM;
 
-	if (AV_OK != (rc = av_torb_create_object("graphics_pattern_cairo", (av_object_p*)&pattern)))
+	if (AV_OK != (rc = oop->new(oop, "graphics_pattern_cairo", (av_object_p*)&pattern)))
 	{
 		cairo_pattern_destroy(p);
 		return rc;
@@ -900,12 +905,12 @@ static av_result_t av_graphics_cairo_get_text_extents(av_graphics_p self,
 	cairo_text_extents(cairo, utf8, &text_extents);
 	if (CAIRO_STATUS_SUCCESS == (rc = cairo_status(cairo)))
 	{
-		*pwidth = UNSCALE_X(self, text_extents.width);
-		*pheight = UNSCALE_Y(self, text_extents.height);
-		*pxbearing = UNSCALE_X(self, text_extents.x_bearing);
-		*pybearing = UNSCALE_Y(self, text_extents.y_bearing);
-		*pxadvance = UNSCALE_X(self, text_extents.x_advance);
-		*pyadvance = UNSCALE_Y(self, text_extents.y_advance);
+		*pwidth    = (int)floor(UNSCALE_X(self, text_extents.width));
+		*pheight   = (int)floor(UNSCALE_Y(self, text_extents.height));
+		*pxbearing = (int)floor(UNSCALE_X(self, text_extents.x_bearing));
+		*pybearing = (int)floor(UNSCALE_Y(self, text_extents.y_bearing));
+		*pxadvance = (int)floor(UNSCALE_X(self, text_extents.x_advance));
+		*pyadvance = (int)floor(UNSCALE_Y(self, text_extents.y_advance));
 	}
 
 	return av_cairo_error_check("cairo_text_extents", rc);
@@ -966,17 +971,12 @@ static av_result_t av_graphics_cairo_set_font_size(av_graphics_p self, int size)
 static void av_graphics_cairo_destructor(void* pgraphics)
 {
 	AV_UNUSED(pgraphics);
-	av_torb_service_release("log");
 }
 
 /* Initializes memory given by the input pointer with the graphics cairo class information */
 static av_result_t av_graphics_cairo_constructor(av_object_p object)
 {
-	av_result_t rc;
 	av_graphics_p self = (av_graphics_p)object;
-
-	if (AV_OK != (rc = av_torb_service_addref("log", (av_service_p*)&_log)))
-		return rc;
 
 	self->graphics_surface    = AV_NULL;
 
@@ -1030,19 +1030,19 @@ static av_result_t av_graphics_cairo_constructor(av_object_p object)
 }
 
 /* Registers Cairo graphics class into TORBA class repository */
-AV_API av_result_t av_graphics_cairo_register_torba(void)
+AV_API av_result_t av_graphics_cairo_register_oop(av_oop_p oop)
 {
 	av_result_t rc;
-	if (AV_OK != (rc = av_graphics_surface_cairo_register_torba()))
+	if (AV_OK != (rc = av_graphics_surface_cairo_register_oop(oop)))
 		return rc;
 
-	if (AV_OK != (rc = av_torb_register_class("graphics_pattern_cairo",
+	if (AV_OK != (rc = oop->define_class(oop, "graphics_pattern_cairo",
 											  AV_NULL, sizeof(av_graphics_pattern_t),
 											  av_graphics_pattern_cairo_constructor,
 											  av_graphics_pattern_cairo_destructor)))
 		return rc;
 
-	return av_torb_register_class("graphics_cairo", "graphics", sizeof(av_graphics_t),
+	return oop->define_class(oop, "graphics_cairo", "graphics", sizeof(av_graphics_t),
 								  av_graphics_cairo_constructor, av_graphics_cairo_destructor);
 }
 

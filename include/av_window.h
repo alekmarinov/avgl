@@ -215,13 +215,6 @@ typedef struct av_window
 	*/
 	av_result_t (*set_rect)            (struct av_window* self, av_rect_p rect);
 
-	/*!
-	* \brief Invalidates the area occuppied by this window
-	* \param self is a reference to this object
-	*/
-	void (*update)                     (struct av_window* self, av_window_update_t window_update);
-
-	av_result_t (*get_surface)         (struct av_window* self, av_surface_p* ppsurface);
 
 	/*!
 	* \brief Raises this window on top of the other sibling windows

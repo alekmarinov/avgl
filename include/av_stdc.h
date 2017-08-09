@@ -27,6 +27,7 @@
 
 int av_strlen(const char* str);
 void av_strncpy(char* dst, const char* src, int dstsize);
+void av_memcpy(unsigned char* dst, unsigned char* src, int size);
 int av_strcmp(const char* str1, const char* str2);
 char* av_strdup(const char* str);
 void av_memset(void* dst, unsigned char val, int size);

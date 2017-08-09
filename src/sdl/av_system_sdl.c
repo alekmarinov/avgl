@@ -10,6 +10,7 @@
 
 #ifdef WITH_SYSTEM_SDL
 
+#include "av_core_sdl.h"
 #include <avgl.h>
 #include <SDL.h>
 #include <SDL_keyboard.h>
@@ -22,44 +23,9 @@ av_result_t av_timer_sdl_register_oop(av_oop_p);
 av_result_t av_audio_sdl_register_oop(av_oop_p);
 */
 
-av_result_t av_sdl_error_process(int rc, const char* funcname, const char* srcfilename, int linenumber)
-{
-	av_result_t averr = AV_OK;
-	if (rc < 0)
-	{
-		const char* errmsg = SDL_GetError();
-		if (!av_strcmp(errmsg, "Out of memory"))
-			averr = AV_EMEM;
-		else if (!av_strcmp(errmsg, "Error reading from datastream"))
-			averr = AV_EREAD;
-		else if (!av_strcmp(errmsg, "Error writing to datastream"))
-			averr = AV_EWRITE;
-		else if (!av_strcmp(errmsg, "Error seeking in datastream"))
-			averr = AV_ESEEK;
-
-		if (averr != AV_OK)
-		{
-			// _log->error(_log, "%s returned error (%d) `%s' %s:%d", 
-			//						funcname, rc, errmsg, srcfilename, linenumber);
-		}
-		else
-		{
-			// _log->error(_log, "%s returned unknown error with message `%s' %s:%d", 
-			//						funcname, errmsg, srcfilename, linenumber);
-		}
-	}
-	return averr;
-}
-
-#define av_sdl_error_check(funcname, rc) av_sdl_error_process(rc, funcname, __FILE__, __LINE__)
-
 static void av_system_sdl_destructor(void* psystemsdl)
 {
 	av_system_p self = (av_system_p)psystemsdl;
-	if (self->audio) O_release(self->audio);
-	if (self->timer) O_release(self->timer);
-	if (self->input) O_release(self->input);
-	if (self->display) O_release(self->display);
 
 	/* Quit SDL */
 	// _log->debug(_log, "SDL: Quiting");
@@ -70,7 +36,6 @@ static void av_system_sdl_destructor(void* psystemsdl)
 static av_result_t av_system_sdl_constructor(av_object_p object)
 {
 	int sdl_flags;
-	av_oop_p oop;
 	av_result_t rc;
 	av_system_p self = (av_system_p)object;
 
@@ -81,15 +46,6 @@ static av_result_t av_system_sdl_constructor(av_object_p object)
 	if (AV_OK != (rc = av_sdl_error_check("SDL_Init", SDL_Init(sdl_flags))))
 		return rc;
 
-	oop = object->classref->oop;
-	if (AV_OK != (rc = oop->service_ref(oop, "display", (av_service_p *)&self->display)))
-		return rc;
-
-	if (AV_OK != (rc = oop->service_ref(oop, "input", (av_service_p *)&self->input)))
-		return rc;
-
-	if (AV_OK != (rc = oop->service_ref(oop, "timer", (av_service_p *)&self->timer)))
-		return rc;
 
 	/* Enable unicode translation of keyboard input */
 	// _log->debug(_log, "SDL: Enable UNICODE keyboard input translation");
