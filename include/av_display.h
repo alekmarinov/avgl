@@ -18,6 +18,8 @@
 #include <av_oop.h>
 #include <av_surface.h>
 #include <av_rect.h>
+#include <av_bitmap.h>
+#include <av_surface.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,6 +110,9 @@ typedef struct av_display
 	*/
 	av_result_t (*get_configuration)(struct av_display* self, av_display_config_p config);
 
+	av_result_t (*create_bitmap)    (struct av_display* self, av_bitmap_p* bitmap);
+	av_result_t(*create_surface)   (struct av_display* self, av_surface_p* surface);
+
 	/*!
 	* \brief Creates display surface
 	* \param self is a reference to this object
@@ -181,6 +186,7 @@ typedef struct av_display
 	*/
 	void        (*get_mouse_position)(struct av_display* self, int* pmx, int* pmy);
 
+	void        (*render)            (struct av_display* self);
 } av_display_t, *av_display_p;
 
 /*!

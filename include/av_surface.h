@@ -17,6 +17,7 @@
 #include <av.h>
 #include <av_oop.h>
 #include <av_rect.h>
+#include <av_bitmap.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,27 +27,6 @@ extern "C" {
 * \brief Single pixel type
 */
 typedef unsigned int av_pixel_t, *av_pixel_p;
-
-/*!
-* \brief Single byte of a pixel for planar formats and overlay access
-*/
-typedef unsigned char av_pix_t, *av_pix_p;
-
-/*!
-* \brief lock flags
-*
-*/
-typedef enum av_surface_lock_flags
-{
-	/*! the surface is not locked */
-	AV_SURFACE_LOCK_NONE,
-
-	/*! surface locked for read only */
-	AV_SURFACE_LOCK_READ,
-
-	/*! surface locked for read or write */
-	AV_SURFACE_LOCK_WRITE
-} av_surface_lock_flags_t;
 
 /*!
 * \brief Class surface
@@ -89,47 +69,27 @@ typedef struct av_surface
 	*         - != AV_OK on failure
 	*/
 	av_result_t (*lock)        (struct av_surface* self,
-								av_surface_lock_flags_t lockflags,
 								av_pixel_p* ppixels,
 								int* ppitch);
 
 	/*!
 	* \brief Unlocks locked surface
 	* \param self is a reference to this object
-	* \return av_result_t
-	*         - AV_OK on success
-	*         - != AV_OK on failure
 	*/
-	av_result_t (*unlock)      (struct av_surface* self);
+	void (*unlock)             (struct av_surface* self);
 
-	/*!
-	* \brief Set clipping rectangle
-	* \param self is a reference to this object
-	* \param cliprect is the clipping rectangle
-	* \return av_result_t
-	*         - AV_OK on success
-	*         - != AV_OK on failure
-	*/
-	av_result_t (*set_clip)    (struct av_surface* self, av_rect_p cliprect);
+	void (*set_bitmap)         (struct av_surface* self, av_bitmap_p bitmap);
 
-	/*!
-	* \brief Get clipping rectangle
-	* \param self is a reference to this object
-	* \param rect is the result clipped rectangle
-	* \return av_result_t
-	*         - AV_OK on success
-	*         - != AV_OK on failure
-	*/
-	av_result_t (*get_clip)    (struct av_surface* self, av_rect_p rect);
+	void (*render)             (struct av_surface* self, av_rect_p src_rect, av_rect_p dst_rect);
 } av_surface_t, *av_surface_p;
 
 /*!
-* \brief Registers surface class into TORBA
+* \brief Registers surface class into OOP
 * \return av_result_t
 *         - AV_OK on success
 *         - AV_EMEM on out of memory
 */
-AV_API av_result_t av_surface_register_torba(void);
+AV_API av_result_t av_surface_register_oop(av_oop_p);
 
 #ifdef __cplusplus
 }

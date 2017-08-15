@@ -192,7 +192,7 @@ typedef struct av_graphics_surface
 typedef struct av_graphics
 {
 	/*! parent class object */
-	av_object_t object;
+	av_service_t object;
 
 	/*! target graphics surface */
 	av_graphics_surface_p graphics_surface;
@@ -218,6 +218,14 @@ typedef struct av_graphics
 								  int height,
 								  av_graphics_surface_p* ppgraphicssurface);
 
+
+	av_result_t (*create_surface_from_data)(struct av_graphics* self,
+										    int width,
+											int height,
+											av_pixel_p pixels,
+											int pitch,
+											av_graphics_surface_p* ppsurface);
+
 	/*!
 	* \brief Create graphics surface from file
 	* \param self is a reference to this object
@@ -229,9 +237,9 @@ typedef struct av_graphics
 	*         - AV_ESUPPORTED on not supported file format
 	*         - AV_EMEM on out of memory
 	*/
-	av_result_t (*create_surface_file)(struct av_graphics* self,
-									   const char* filename,
-									   av_graphics_surface_p* ppgraphicssurface);
+	av_result_t (*create_surface_from_file)(struct av_graphics* self,
+									        const char* filename,
+									        av_graphics_surface_p* ppgraphicssurface);
 
 	/*!
 	* \brief Writes graphics surface to file
@@ -245,19 +253,6 @@ typedef struct av_graphics
 	av_result_t (*save_surface_file)(struct av_graphics* self,
 									 av_graphics_surface_p graphicssurface,
 									 const char* filename);
-
-	/*!
-	* \brief Create graphics surface wrapping a given surface
-	* \param self is a reference to this object
-	* \param surface to be wrapped
-	* \param ppgraphicssurface result graphics surface object
-	* \return av_result_t
-	*         - AV_OK on success
-	*         - != AV_OK on failure
-	*/
-	av_result_t (*wrap_surface)  (struct av_graphics* self,
-								  av_surface_p surface,
-								  av_graphics_surface_p* ppgraphicssurface);
 
 	/*!
 	* \brief Setup drawing environment over a target graphics surface

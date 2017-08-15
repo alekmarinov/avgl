@@ -10,9 +10,9 @@
 
 main()
 {
-	TEST(test_oop_inheritance)
+	//TEST(test_oop_inheritance)
 	TEST(test_avgl_create_destroy)
-	TEST(test_window_absolute)
+	//TEST(test_window_absolute)
 
 #ifdef _MSC_VER
 		_CrtDumpMemoryLeaks();

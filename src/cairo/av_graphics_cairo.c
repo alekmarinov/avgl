@@ -44,7 +44,7 @@
 */
 
 /* exported registration method */
-AV_API av_result_t av_graphics_cairo_register_torba(void);
+AV_API av_result_t av_graphics_cairo_register_oop(av_oop_p);
 
 static av_log_p _log = AV_NULL;
 
@@ -137,8 +137,36 @@ static av_result_t av_graphics_cairo_create_surface(av_graphics_p self,
 	return AV_OK;
 }
 
+
+static av_result_t av_graphics_cairo_create_surface_from_data(av_graphics_p self, int width, int height, av_pixel_p pixels, int pitch, av_graphics_surface_p* ppsurface)
+{
+	av_result_t rc;
+	av_graphics_surface_p surface;
+	av_oop_p oop = O_oop(self);
+	cairo_surface_t *image = cairo_image_surface_create_for_data((unsigned char*)pixels, CAIRO_FORMAT_ARGB32, width, height, pitch);
+	if (!image)
+		return AV_EMEM;
+
+	if (AV_OK != (rc = av_cairo_error_check("cairo_image_surface_create_for_data", cairo_surface_status(image))))
+	{
+		cairo_surface_destroy(image);
+		return rc;
+	}
+
+	if (AV_OK != (rc = oop->new(oop, "graphics_surface_cairo", (av_object_p*)&surface)))
+	{
+		cairo_surface_destroy(image);
+		return rc;
+	}
+
+	O_set_attr(surface, CONTEXT_GRAPHICS_SURFACE, image);
+	surface->graphics = self;
+	*ppsurface = surface;
+	return AV_OK;
+}
+
 /* Create cairo graphics surface from file */
-static av_result_t av_graphics_cairo_create_surface_file(av_graphics_p self, const char* filename, av_graphics_surface_p* ppsurface)
+static av_result_t av_graphics_cairo_create_surface_from_file(av_graphics_p self, const char* filename, av_graphics_surface_p* ppsurface)
 {
 	av_result_t rc;
 	av_graphics_surface_p surface;
@@ -174,41 +202,6 @@ static av_result_t av_graphics_cairo_save_surface_file(av_graphics_p self,
 
 	/* FIXME: Detect file format */
 	return av_cairo_error_check("cairo_surface_write_to_png", cairo_surface_write_to_png(image, filename));
-}
-
-/* Create cairo graphics surface */
-static av_result_t av_graphics_cairo_wrap_surface(av_graphics_p self,
-												  av_surface_p wrap_surface,
-												  av_graphics_surface_p* ppsurface)
-{
-	av_result_t rc;
-	int width, height;
-	av_graphics_surface_cairo_p surface;
-	av_oop_p oop = O_oop(self);
-	if (AV_OK != (rc = oop->new(oop, "graphics_surface_cairo", (av_object_p*)&surface)))
-	{
-		return rc;
-	}
-
-	/* assign wrapped surface */
-	surface->wrap_surface = wrap_surface;
-
-	if (AV_OK != (rc = wrap_surface->get_size(wrap_surface, &width, &height)))
-	{
-		O_destroy(surface);
-		return rc;
-	}
-
-	/* set_size could expect a reference to the graphics owner object */
-	((av_graphics_surface_p)surface)->graphics = self;
-
-	if (AV_OK != (rc = ((av_surface_p)surface)->set_size((av_surface_p)surface, width, height)))
-	{
-		O_destroy(surface);
-		return rc;
-	}
-	*ppsurface = (av_graphics_surface_p)surface;
-	return AV_OK;
 }
 
 /*
@@ -982,9 +975,9 @@ static av_result_t av_graphics_cairo_constructor(av_object_p object)
 
 	/* override abstract methods */
 	self->create_surface      = av_graphics_cairo_create_surface;
-	self->create_surface_file = av_graphics_cairo_create_surface_file;
+	self->create_surface_from_data = av_graphics_cairo_create_surface_from_data;
+	self->create_surface_from_file = av_graphics_cairo_create_surface_from_file;
 	self->save_surface_file   = av_graphics_cairo_save_surface_file;
-	self->wrap_surface        = av_graphics_cairo_wrap_surface;
 	self->begin               = av_graphics_cairo_begin;
 	self->get_target_surface  = av_graphics_cairo_get_target_surface;
 	self->end                 = av_graphics_cairo_end;
@@ -1033,6 +1026,11 @@ static av_result_t av_graphics_cairo_constructor(av_object_p object)
 AV_API av_result_t av_graphics_cairo_register_oop(av_oop_p oop)
 {
 	av_result_t rc;
+	av_service_p graphics;
+
+	if (AV_OK != (rc = av_graphics_register_oop(oop)))
+		return rc;
+
 	if (AV_OK != (rc = av_graphics_surface_cairo_register_oop(oop)))
 		return rc;
 
@@ -1042,8 +1040,16 @@ AV_API av_result_t av_graphics_cairo_register_oop(av_oop_p oop)
 											  av_graphics_pattern_cairo_destructor)))
 		return rc;
 
-	return oop->define_class(oop, "graphics_cairo", "graphics", sizeof(av_graphics_t),
-								  av_graphics_cairo_constructor, av_graphics_cairo_destructor);
+	if (AV_OK != (rc = oop->define_class(oop, "graphics_cairo", "graphics", sizeof(av_graphics_t),
+		av_graphics_cairo_constructor, av_graphics_cairo_destructor)))
+		return rc;
+
+
+	if (AV_OK != (rc = oop->new(oop, "graphics_cairo", (av_object_p*)&graphics)))
+		return rc;
+
+	/* register cairo graphics as service */
+	return oop->register_service(oop, "graphics", graphics);
 }
 
 #endif /* WITH_GRAPHICS_CAIRO */

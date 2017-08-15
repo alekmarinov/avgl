@@ -19,6 +19,8 @@
 #include <av_input.h>
 #include <av_timer.h>
 #include <av_window.h>
+#include <av_bitmap.h>
+#include <av_surface.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,17 +29,27 @@ extern "C" {
 /* forward declaration */
 struct av_system_t;
 
+
+
 /*!
 * \brief visible interface
 *
 */
-typedef struct av_visible_t
+typedef struct _av_visible_t
 {
 	av_window_t window;
 
 	struct av_system_t* system;
+
+	av_surface_p surface;
+
+	av_result_t (*draw)(struct _av_visible_t* self);
+
+	void (*on_draw)(struct _av_visible_t* self, av_graphics_p graphics);
+
 } av_visible_t, *av_visible_p;
 
+typedef void (*on_draw_t)(av_visible_p self, av_graphics_p graphics);
 
 /*!
 * \brief system interface
@@ -55,6 +67,9 @@ typedef struct av_system
 
 	/*! Display object */
 	av_display_p display;
+
+	/*! Graphics object */
+	av_graphics_p graphics;
 
 	/*! Input object */
 	av_input_p input;

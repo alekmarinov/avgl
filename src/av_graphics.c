@@ -22,8 +22,19 @@ static av_result_t av_graphics_create_surface(av_graphics_p self, int width, int
 	return AV_ESUPPORTED;
 }
 
+static av_result_t av_graphics_create_surface_from_data(av_graphics_p self, int width, int height, av_pixel_p pixels, int pitch,
+	av_graphics_surface_p* ppsurface)
+{
+	AV_UNUSED(self);
+	AV_UNUSED(width);
+	AV_UNUSED(height);
+	AV_UNUSED(pixels);
+	AV_UNUSED(pitch);
+	return AV_ESUPPORTED;
+}
+
 /* Create graphics surface from file */
-static av_result_t av_graphics_create_surface_file(av_graphics_p self, const char* filename, av_graphics_surface_p *ppsurface)
+static av_result_t av_graphics_create_surface_from_file(av_graphics_p self, const char* filename, av_graphics_surface_p *ppsurface)
 {
 	AV_UNUSED(self);
 	AV_UNUSED(filename);
@@ -37,15 +48,6 @@ static av_result_t av_graphics_save_surface_file(av_graphics_p self, av_graphics
 	AV_UNUSED(self);
 	AV_UNUSED(surface);
 	AV_UNUSED(filename);
-	return AV_ESUPPORTED;
-}
-
-/* Wrap graphics surface */
-static av_result_t av_graphics_wrap_surface(av_graphics_p self, av_surface_p wrapsurface, av_graphics_surface_p *ppsurface)
-{
-	AV_UNUSED(self);
-	AV_UNUSED(wrapsurface);
-	AV_UNUSED(ppsurface);
 	return AV_ESUPPORTED;
 }
 
@@ -444,9 +446,9 @@ static av_result_t av_graphics_constructor(av_object_p pobject)
 
 	self->graphics_surface    = AV_NULL;
 	self->create_surface      = av_graphics_create_surface;
-	self->create_surface_file = av_graphics_create_surface_file;
+	self->create_surface_from_data = av_graphics_create_surface_from_data;
+	self->create_surface_from_file = av_graphics_create_surface_from_file;
 	self->save_surface_file   = av_graphics_save_surface_file;
-	self->wrap_surface        = av_graphics_wrap_surface;
 	self->begin               = av_graphics_begin;
 	self->get_target_surface  = av_graphics_get_target_surface;
 	self->end                 = av_graphics_end;
@@ -486,6 +488,6 @@ static av_result_t av_graphics_constructor(av_object_p pobject)
 
 av_result_t av_graphics_register_oop(av_oop_p oop)
 {
-	return oop->define_class(oop, "graphics", AV_NULL, sizeof(av_graphics_t),
+	return oop->define_class(oop, "graphics", "service", sizeof(av_graphics_t),
 								  av_graphics_constructor, av_graphics_destructor);
 }

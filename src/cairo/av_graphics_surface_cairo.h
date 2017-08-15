@@ -16,26 +16,6 @@
 #include <av_oop.h>
 
 av_result_t av_graphics_surface_cairo_register_oop(av_oop_p);
-av_result_t av_graphics_surface_cairo_init_class(void*, const char*);
-
-typedef struct av_graphics_surface_cairo
-{
-	/*! parent object */
-	av_graphics_surface_t graphics_surface;
-
-	/*! wrapped surface */
-	av_surface_p wrap_surface;
-
-	/*! locking flags */
-	av_surface_lock_flags_t lockflags;
-
-	/*! wrapped surface pixels */
-	av_pixel_p pixels;
-
-	/*! wrapped surface pitch */
-	int pitch;
-
-} av_graphics_surface_cairo_t, *av_graphics_surface_cairo_p;
 
 #define CONTEXT_GRAPHICS_SURFACE "graphics_surface_cairo_ctx"
 #define CONTEXT_GRAPHICS_PATTERN "graphics_pattern_cairo_ctx"

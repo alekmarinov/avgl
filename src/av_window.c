@@ -410,7 +410,7 @@ static void av_window_manage_rect(av_window_p self, av_rect_p rect)
 }
 
 /* Sets new window rectangle */
-static av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
+av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 {
 	av_rect_t invrect;
 	av_rect_t oldrect;

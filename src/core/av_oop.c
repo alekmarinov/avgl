@@ -11,6 +11,7 @@
 
 #include <av_oop.h>
 #include "av_stdc.h"
+#include "av_debug.h"
 
 /* the class names of avgl base classes */
 static const char* object_class_name = "object";
@@ -85,10 +86,13 @@ static void av_object_dump_attributes(av_object_p self)
 	void* value;
 	char classname[MAX_NAME_SIZE];
 	self->tostring(self, classname, MAX_NAME_SIZE);
-	self->attributes->first(self->attributes);
-	while (self->attributes->next(self->attributes, &key, &value))
+	if (self->attributes)
 	{
-		printf("%s: %s = %p\n", classname, key, value);
+		self->attributes->first(self->attributes);
+		while (self->attributes->next(self->attributes, &key, &value))
+		{
+			printf("%s: %s = %p\n", classname, key, value);
+		}
 	}
 }
 
@@ -105,6 +109,7 @@ static char* av_object_tostring(av_object_p self, char* buf, int bufsize)
 static void av_object_destructor(av_object_p self)
 {
 	av_class_p classref;
+	av_dbg("av_object_destructor: %p %s\n", self, self->classref->classname);
 
 	classref = self->classref;
 	// call all parent destructors but without object
@@ -125,6 +130,7 @@ static void av_object_destructor(av_object_p self)
 /* Object constructor */
 static av_result_t av_object_constructor(av_object_p self)
 {
+	av_dbg("av_object_constructor %p\n", self);
 	self->attributes = AV_NULL;
 	self->is_a = av_object_is_a;
 	self->tostring = av_object_tostring;
@@ -156,6 +162,7 @@ static void av_service_release(av_service_p self)
 /* Initializes memory given by the object argument with a service class information */
 static av_result_t av_service_constructor(av_object_p object)
 {
+	av_dbg("av_service_constructor: %p\n", object);
 	av_service_p self = (av_service_p)object;
 	self->name[0] = '\0';
 	self->refcnt = 0;
@@ -187,9 +194,13 @@ static av_result_t av_oop_define_class(av_oop_p self,
 		parentclassname = object_class_name;
 	}
 
+	av_dbg("av_oop_define_class: %s->%s %d\n", classname, parentclassname, classsize);
+
 	/* checks if the class name is not already defined */
 	if (AV_NULL != self->classmap->get(self->classmap, classname))
 	{
+		av_dbg("av_oop_define_class: %s is already defined\n", classname);
+
 		/* already defined */
 		return AV_OK;
 	}
@@ -199,7 +210,10 @@ static av_result_t av_oop_define_class(av_oop_p self,
 	{
 		parent = (av_class_p)self->classmap->get(self->classmap, parentclassname);
 		if (!parent)
+		{
+			av_dbg("Parent class %s is not found\n", parentclassname);
 			return AV_EFOUND;
+		}
 	}
 
 	/* creates new class descriptor entry */
@@ -238,8 +252,11 @@ static av_result_t av_oop_register_service(av_oop_p self, const char* servicenam
 	av_assert(servicename && service,
 		"NULL service name or service object is not allowed");
 
+	av_dbg("av_oop_register_service: %p registered as service %s\n", service, servicename);
 	if (AV_NULL != self->servicemap->get(self->servicemap, servicename))
 	{
+		av_dbg("av_oop_register_service: %s is already registered\n", servicename);
+
 		/* already registered */
 		return AV_OK;
 	}
@@ -268,6 +285,7 @@ static av_result_t av_oop_service_ref(av_oop_p self, const char* servicename, av
 
 	if (AV_NULL == (service = self->servicemap->get(self->servicemap, servicename)))
 	{
+		av_dbg("av_oop_service_ref: Service %s not found\n", servicename);
 		/* service not found */
 		return AV_EFOUND;
 	}
@@ -289,7 +307,10 @@ static av_result_t av_oop_new(av_oop_p self, const char* classname, av_object_p*
 
 	classref = (av_class_p)self->classmap->get(self->classmap, classname);
 	if (AV_NULL == classref)
+	{
+		av_dbg("av_oop_new: Class %s not found\n", classname);
 		return AV_EFOUND;
+	}
 
 	object = (av_object_p)calloc(1, classref->classsize);
 	if (!object)
@@ -320,12 +341,14 @@ static av_result_t av_oop_new(av_oop_p self, const char* classname, av_object_p*
 			}
 	}
 	*ppobject = object;
+	av_dbg("av_oop_new: New object %p of class %s\n", object, classname);
 	parentslist->destroy(parentslist);
 	return AV_OK;
 }
 
 static void av_oop_destroy(av_oop_p self)
 {
+	av_dbg("av_oop_destroy\n");
 	self->services->iterate_all(self->services, free, AV_FALSE);
 	self->classes->iterate_all(self->classes, free, AV_FALSE);
 	self->services->destroy(self->services);
@@ -339,6 +362,7 @@ av_result_t av_oop_create(av_oop_p* pself)
 {
 	av_result_t rc;
 	av_oop_p self = (av_oop_p)av_malloc(sizeof(av_oop_t));
+	av_dbg("av_oop_create\n");
 	if (!self)
 		return AV_EMEM;
 

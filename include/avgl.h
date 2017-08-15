@@ -38,25 +38,13 @@
 #include <av_window.h>
 #include <av_stdc.h>
 
-typedef struct _avgl_t
-{
-	/*! implementation specific */
-	void* ctx;
+typedef void (*on_paint_t)(av_visible_p visible, av_graphics_p graphics);
 
-	/*!
-	* \brief Main application loop
-	* \param self is a reference to this object
-	*/
-	void(*loop)(void* self);
-
-	/*!
-	* \brief Default object destructor
-	* \param self is a void* pointer to this object
-	*/
-	void(*destroy)(void* self);
-
-} avgl_t, *avgl_p;
-
-AV_API av_result_t avgl_create(avgl_p* pself);
+AV_API av_bool_t avgl_create();
+AV_API av_visible_p avgl_create_visible(av_visible_p parent, int x, int y, int w, int h, on_draw_t on_draw);
+AV_API av_result_t avgl_last_error();
+AV_API void avgl_loop();
+AV_API void avgl_step();
+AV_API void avgl_destroy();
 
 #endif /* __AVGL_H */

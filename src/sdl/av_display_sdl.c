@@ -13,7 +13,9 @@
 
 #include <av_display.h>
 #include "av_display_sdl.h"
+#include "av_surface_sdl.h"
 #include "av_display_cursor_sdl.h"
+#include "av_debug.h"
 #include <SDL_mouse.h>
 
 static av_result_t av_display_sdl_set_size(av_surface_p pdisplay, int width, int height)
@@ -182,6 +184,29 @@ static void av_display_sdl_get_mouse_position(av_display_p self, int* pmx, int* 
 	SDL_GetMouseState(pmx, pmy);
 }
 
+av_result_t av_display_sdl_create_bitmap(struct av_display* self, av_bitmap_p* bitmap)
+{
+	av_oop_p oop = O_oop(self);
+	return oop->new(oop, "bitmap_sdl", (av_object_p*)bitmap);
+}
+
+av_result_t av_display_sdl_create_surface(struct av_display* self, av_surface_p* surface)
+{
+	av_result_t rc;
+	av_oop_p oop = O_oop(self);
+	if (AV_OK != (rc = oop->new(oop, "surface_sdl", (av_object_p*)surface)))
+		return rc;
+	O_surface_context(*surface)->display = (av_display_sdl_p)self;
+	return AV_OK;
+}
+
+static void av_display_sdl_render(struct av_display* display)
+{
+	av_display_sdl_p self = (av_display_sdl_p)display;
+	SDL_RenderPresent(self->renderer);
+	av_dbg("SDL_RenderPresent\n");
+}
+
 static void av_display_sdl_destructor(void* pdisplay)
 {
 	av_display_sdl_p self = (av_display_sdl_p)pdisplay;
@@ -198,14 +223,15 @@ static av_result_t av_display_sdl_constructor(av_object_p self)
 	((av_display_p)self)->enum_display_modes        = av_display_sdl_enum_display_modes;
 	((av_display_p)self)->set_configuration         = av_display_sdl_set_configuration;
 	((av_display_p)self)->get_configuration         = av_display_sdl_get_configuration;
-//	((av_display_p)self)->create_surface            = av_display_sdl_create_surface;
-//	((av_display_p)self)->create_surface_from       = av_display_sdl_create_surface_from;
+	((av_display_p)self)->create_surface            = av_display_sdl_create_surface;
+	((av_display_p)self)->create_bitmap             = av_display_sdl_create_bitmap;
 	((av_display_p)self)->set_capture               = av_display_sdl_set_capture;
 	((av_display_p)self)->set_cursor_visible        = av_display_sdl_set_cursor_visible;
 	((av_display_p)self)->is_cursor_visible         = av_display_sdl_is_cursor_visible;
 	((av_display_p)self)->set_cursor_shape          = av_display_sdl_set_cursor_shape;
 	((av_display_p)self)->set_mouse_position        = av_display_sdl_set_mouse_position;
 	((av_display_p)self)->get_mouse_position        = av_display_sdl_get_mouse_position;
+	((av_display_p)self)->render                    = av_display_sdl_render;
 
 	return AV_OK;
 }
@@ -214,7 +240,7 @@ static av_result_t av_display_sdl_constructor(av_object_p self)
 AV_API av_result_t av_display_sdl_register_oop(av_oop_p oop)
 {
 	av_result_t rc;
-	av_display_sdl_p display;
+	av_service_p display;
 	if (AV_OK != (rc = av_display_register_oop(oop)))
 		return rc;
 
@@ -224,8 +250,8 @@ AV_API av_result_t av_display_sdl_register_oop(av_oop_p oop)
 	if (AV_OK != (rc = oop->new(oop, "display_sdl", (av_object_p*)&display)))
 		return rc;
 
-	/* register display as service */
-	return oop->register_service(oop, "display", (av_service_p)display);
+	/* register sdl display as service */
+	return oop->register_service(oop, "display", display);
 }
 
 

@@ -19,6 +19,8 @@
 av_result_t av_display_sdl_register_oop(av_oop_p);
 av_result_t av_input_sdl_register_oop(av_oop_p);
 av_result_t av_timer_sdl_register_oop(av_oop_p);
+av_result_t av_surface_sdl_register_oop(av_oop_p);
+
 /*
 av_result_t av_audio_sdl_register_oop(av_oop_p);
 */
@@ -73,6 +75,9 @@ av_result_t av_system_sdl_register_oop(av_oop_p oop)
 		return rc;
 	if (AV_OK != (rc = av_timer_sdl_register_oop(oop)))
 		return rc;
+	if (AV_OK != (rc = av_surface_sdl_register_oop(oop)))
+		return rc;
+	
 	/*	if (AV_OK != (rc = av_audio_sdl_register_oop(oop)))
 		return rc;*/
 	if (AV_OK != (rc = oop->define_class(oop, "system_sdl", "system", sizeof(av_system_t), av_system_sdl_constructor, av_system_sdl_destructor)))

@@ -88,21 +88,38 @@ static void av_display_get_mouse_position(av_display_p self, int* pmx, int* pmy)
 	AV_UNUSED(pmy);
 }
 
+static av_result_t av_display_create_bitmap(struct av_display* self, av_bitmap_p* bitmap)
+{
+	av_oop_p oop = O_oop(self);
+	return oop->new(oop, "bitmap", (av_object_p*)bitmap);
+}
+
+static av_result_t av_display_create_surface(struct av_display* self, av_surface_p* surface)
+{
+	av_oop_p oop = O_oop(self);
+	return oop->new(oop, "surface", (av_object_p*)surface);
+}
+
+static void av_display_render(struct av_display* self)
+{
+	AV_UNUSED(self);
+}
 
 /* Initializes memory given by the input pointer with the display's class information */
 static av_result_t av_display_constructor(av_object_p object)
 {
 	av_display_p self           = (av_display_p)object;
 	self->enum_display_modes    = av_display_enum_display_modes;
-	self->set_configuration   = av_display_set_configuration;
-	self->get_configuration   = av_display_get_configuration;
-	//self->create_surface      = av_display_create_surface;
-	//self->create_surface_from = av_display_create_surface_from;
-	self->set_capture         = av_display_set_capture;
-	self->set_cursor_visible  = av_display_set_cursor_visible;
-	self->set_cursor_shape    = av_display_set_cursor_shape;
-	self->set_mouse_position  = av_display_set_mouse_position;
-	self->get_mouse_position  = av_display_get_mouse_position;
+	self->set_configuration     = av_display_set_configuration;
+	self->get_configuration     = av_display_get_configuration;
+	self->create_bitmap         = av_display_create_bitmap;
+	self->create_surface        = av_display_create_surface;
+	self->set_capture           = av_display_set_capture;
+	self->set_cursor_visible    = av_display_set_cursor_visible;
+	self->set_cursor_shape      = av_display_set_cursor_shape;
+	self->set_mouse_position    = av_display_set_mouse_position;
+	self->get_mouse_position    = av_display_get_mouse_position;
+	self->render                = av_display_render;
 	return AV_OK;
 }
 

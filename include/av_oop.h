@@ -99,7 +99,7 @@ typedef av_result_t(*av_constructor_t)(struct _av_object_t* self);
 * \brief Defines type for object destructor assigned to each registered class
 * @param self is pointing an allocated object to be destructed by this function
 */
-typedef void(*av_destructor_t)(void *);
+typedef void(*av_destructor_t)(struct _av_object_t*);
 
 /* class descriptor */
 typedef struct _av_class_t
@@ -218,6 +218,9 @@ typedef struct _av_object_t
 
 /*! Refers oop from object */
 #define O_oop(o)             ((av_object_p)o)->classref->oop
+
+/*! Dump oop attributes */
+#define O_dump(o)            ((av_object_p)o)->dump_attributes((av_object_p)o)
 
 /*!
 * \brief The super class of all avgl services
