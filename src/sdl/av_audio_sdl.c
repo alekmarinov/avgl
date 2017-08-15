@@ -15,7 +15,7 @@
 #include <av_audio.h>
 #include <av_media.h>
 #include <av_thread.h>
-
+#include "av_core_sdl.h"
 #include <SDL.h>
 
 #define SDL_AUDIO_SILENCE 0

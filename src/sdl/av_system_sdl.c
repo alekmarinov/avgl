@@ -20,6 +20,7 @@ av_result_t av_display_sdl_register_oop(av_oop_p);
 av_result_t av_input_sdl_register_oop(av_oop_p);
 av_result_t av_timer_sdl_register_oop(av_oop_p);
 av_result_t av_surface_sdl_register_oop(av_oop_p);
+AV_API av_result_t av_system_sdl_register_oop(av_oop_p);
 
 /*
 av_result_t av_audio_sdl_register_oop(av_oop_p);
@@ -63,7 +64,7 @@ static av_result_t av_system_sdl_constructor(av_object_p object)
 }
 
 /* Registers system sdl class into oop container */
-av_result_t av_system_sdl_register_oop(av_oop_p oop)
+AV_API av_result_t av_system_sdl_register_oop(av_oop_p oop)
 {
 	av_result_t rc;
 	av_system_p system;

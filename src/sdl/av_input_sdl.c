@@ -12,6 +12,7 @@
 
 #include <avgl.h>
 #include <SDL.h>
+#include "av_core_sdl.h"
 
 enum
 {

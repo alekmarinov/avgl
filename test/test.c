@@ -4,7 +4,7 @@
 #endif
 
 #include <stdio.h>
-#include <test.h>
+#include "test.h"
 
 #define TEST(t) if (t()) printf("Test %s PASSED\n", #t); else ("Test %s FAILED\n", #t);
 

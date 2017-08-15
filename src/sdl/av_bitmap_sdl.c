@@ -8,6 +8,8 @@
 /*                                                                   */
 /*********************************************************************/
 
+#ifdef WITH_SYSTEM_SDL
+
 #include <av_bitmap.h>
 #include "av_bitmap_sdl.h"
 #include "av_core_sdl.h"
@@ -84,3 +86,5 @@ av_result_t av_bitmap_sdl_register_oop(av_oop_p oop)
 {
 	return oop->define_class(oop, "bitmap_sdl", "bitmap", sizeof(av_bitmap_t), av_bitmap_sdl_constructor, av_bitmap_sdl_destructor);
 }
+
+#endif /* WITH_SYSTEM_SDL */

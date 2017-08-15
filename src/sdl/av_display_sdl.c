@@ -16,6 +16,7 @@
 #include "av_surface_sdl.h"
 #include "av_display_cursor_sdl.h"
 #include "av_debug.h"
+#include "av_core_sdl.h"
 #include <SDL_mouse.h>
 
 static av_result_t av_display_sdl_set_size(av_surface_p pdisplay, int width, int height)

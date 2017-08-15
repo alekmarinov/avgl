@@ -13,6 +13,7 @@
 #include <SDL.h>
 #include "av_display_sdl.h"
 #include "av_display_cursor_sdl.h"
+#include "av_core_sdl.h"
 
 #include "cursor/arrow.xpm"
 #include "cursor/beam.xpm"

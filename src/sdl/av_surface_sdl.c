@@ -8,6 +8,8 @@
 /*                                                                   */
 /*********************************************************************/
 
+#ifdef WITH_SYSTEM_SDL
+
 #include <av_surface.h>
 #include <av_stdc.h>
 #include "av_surface_sdl.h"
@@ -111,3 +113,5 @@ av_result_t av_surface_sdl_register_oop(av_oop_p oop)
 {
 	return oop->define_class(oop, "surface_sdl", "surface", sizeof(av_surface_t), av_surface_sdl_constructor, av_surface_sdl_destructor);
 }
+
+#endif /* WITH_SYSTEM_SDL */
