@@ -94,6 +94,14 @@ typedef struct av_system
 	void (*loop)                  (struct av_system* self);
 
 	av_result_t (*create_visible) (struct av_system* self, av_visible_p parent, av_rect_p rect, av_visible_p *pvisible);
+
+	/*!
+	* \brief Captures window to receive all mouse event
+	* \param self is a reference to this object
+	* \param window to be captured or AV_NULL to uncapture
+	*/
+	void (*set_capture)           (struct av_system* self, av_window_p window);
+
 } av_system_t, *av_system_p;
 
 /*!
@@ -109,6 +117,3 @@ AV_API av_result_t av_system_register_oop(av_oop_p);
 #endif
 
 #endif /* __AV_SYSTEM_H */
-
-static av_result_t 
-av_visible_constructor(av_object_p object);

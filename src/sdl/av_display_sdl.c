@@ -205,7 +205,7 @@ static void av_display_sdl_render(struct av_display* display)
 {
 	av_display_sdl_p self = (av_display_sdl_p)display;
 	SDL_RenderPresent(self->renderer);
-	av_dbg("SDL_RenderPresent\n");
+//	av_dbg("SDL_RenderPresent\n");
 }
 
 static void av_display_sdl_destructor(void* pdisplay)

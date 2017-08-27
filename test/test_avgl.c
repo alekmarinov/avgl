@@ -13,10 +13,23 @@ void on_draw(av_visible_p self, av_graphics_p graphics)
 	graphics->fill(graphics, AV_FALSE);
 }
 
+void on_mouse_button_down(av_window_p self, av_event_mouse_button_t button, int x, int y)
+{
+	self->raise_top(self);
+}
+
+void create_visible(int x, int y)
+{
+	av_visible_p visible = avgl_create_visible(AV_NULL, x, y, 300, 160, on_draw);
+	av_window_p window = (av_window_p)visible;
+	window->on_mouse_button_down = on_mouse_button_down;
+}
+
 int test_avgl_create_destroy()
 {
 	avgl_create();
-	for (int i = 0; i < 100; i++) avgl_create_visible(AV_NULL, 5 * i, 5 * i, 300, 160, on_draw);
+	for (int i = 0; i < 100; i++)
+		create_visible(5 * i, 5 * i);
 	avgl_loop();
 	avgl_destroy();
 

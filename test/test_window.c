@@ -1,5 +1,4 @@
 #include <avgl.h>
-#include <avgl.h>
 
 void dump_window(av_window_p window)
 {

@@ -43,7 +43,7 @@ static av_result_t av_system_sdl_constructor(av_object_p object)
 	av_system_p self = (av_system_p)object;
 
 	/* Initializes SDL library without catching any fatal signals */
-	sdl_flags = SDL_INIT_NOPARACHUTE | SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO;
+	sdl_flags = SDL_INIT_NOPARACHUTE | SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS;
 
 	// _log->debug(_log, "SDL: Initializing");
 	if (AV_OK != (rc = av_sdl_error_check("SDL_Init", SDL_Init(sdl_flags))))

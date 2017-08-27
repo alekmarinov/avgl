@@ -279,6 +279,10 @@ AV_API void av_event_init_mouse_button(av_event_p event,
 									   av_event_button_status_t button_status,
 									   int mousex,
 									   int mousey);
+
+
+AV_API void av_event_dbg(av_event_p event);
+
 #ifdef __cplusplus
 }
 #endif

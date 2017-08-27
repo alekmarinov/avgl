@@ -373,7 +373,7 @@ static av_result_t av_audio_sdl_close(struct av_audio* self, struct av_audio_han
 
 
 /* Destructor */
-static void av_audio_sdl_destructor(void* object)
+static void av_audio_sdl_destructor(struct _av_object_t* object)
 {
 	av_audio_p self = (av_audio_p)object;
 	av_audio_sdl_ctx_p ctx = (av_audio_sdl_ctx_p)O_context(self);

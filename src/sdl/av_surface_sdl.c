@@ -68,7 +68,7 @@ static av_result_t av_surface_sdl_render(av_surface_p self, av_rect_p src_rect, 
 		// FIXME: Verify SDL error
 		return AV_EGENERAL;
 	}
-	av_dbg("SDL_RenderCopy s:(%d %d %d %d) d:(%d %d %d %d)\n", src_rect->x, src_rect->y, src_rect->w, src_rect->h, dst_rect->x, dst_rect->y, dst_rect->w, dst_rect->h);
+//	av_dbg("SDL_RenderCopy s:(%d %d %d %d) d:(%d %d %d %d)\n", src_rect->x, src_rect->y, src_rect->w, src_rect->h, dst_rect->x, dst_rect->y, dst_rect->w, dst_rect->h);
 	return AV_OK;
 }
 

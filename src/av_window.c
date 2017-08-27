@@ -257,7 +257,7 @@ static void av_window_detach(av_window_p self)
 }
 
 /* Window destructor */
-static void av_window_destructor(void* pobject)
+static void av_window_destructor(struct _av_object_t* pobject)
 {
 	av_window_p self = (av_window_p)pobject;
 	window_ctx_p ctx = O_context(self);

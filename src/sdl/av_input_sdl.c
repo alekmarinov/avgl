@@ -571,7 +571,7 @@ static av_result_t av_input_sdl_push_event(av_input_p self, av_event_p event)
 			return AV_EARG;
 	}
 
-	if (0 != SDL_PushEvent(&e))
+	if (1 != SDL_PushEvent(&e))
 		return AV_EGENERAL;
 	return AV_OK;
 }

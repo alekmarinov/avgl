@@ -107,7 +107,29 @@ av_visible_p avgl_create_visible(av_visible_p parent, int x, int y, int w, int h
 		avgl.last_error = rc;
 		return AV_NULL;
 	}
-	visible->on_draw = on_draw;
+	if (on_draw)
+		visible->on_draw = on_draw;
 	visible->draw(visible);
 	return visible;
 }
+
+void avgl_capture_visible(av_visible_p visible)
+{
+	avgl.system->set_capture(avgl.system, visible);
+}
+
+unsigned long avgl_time_now()
+{
+	return avgl.system->timer->now();
+}
+
+void avgl_event_push(av_event_p event)
+{
+	avgl.system->input->push_event(avgl.system->input, event);
+}
+
+av_bool_t avgl_event_poll(av_event_p event)
+{
+	return avgl.system->input->poll_event(avgl.system->input, event);
+}
+
