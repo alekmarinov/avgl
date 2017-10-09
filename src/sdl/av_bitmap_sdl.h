@@ -22,6 +22,6 @@ typedef struct _bitmap_sdl_ctx_t
 static const char* bitmap_context = "bitmap_sdl_ctx_p";
 #define O_bitmap_context(o) ((bitmap_sdl_ctx_p)O_attr(o, bitmap_context))
 
-AV_API av_result_t av_surface_sdl_register_oop(av_oop_p);
+//AV_API av_result_t av_surface_sdl_register_oop(av_oop_p);
 
 #endif /* __AV_BITMAPA_SDL_H */

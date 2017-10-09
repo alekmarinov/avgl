@@ -898,12 +898,18 @@ static av_result_t av_graphics_cairo_get_text_extents(av_graphics_p self,
 	cairo_text_extents(cairo, utf8, &text_extents);
 	if (CAIRO_STATUS_SUCCESS == (rc = cairo_status(cairo)))
 	{
-		*pwidth    = (int)floor(UNSCALE_X(self, text_extents.width));
-		*pheight   = (int)floor(UNSCALE_Y(self, text_extents.height));
-		*pxbearing = (int)floor(UNSCALE_X(self, text_extents.x_bearing));
-		*pybearing = (int)floor(UNSCALE_Y(self, text_extents.y_bearing));
-		*pxadvance = (int)floor(UNSCALE_X(self, text_extents.x_advance));
-		*pyadvance = (int)floor(UNSCALE_Y(self, text_extents.y_advance));
+		if (pwidth)
+			*pwidth    = (int)floor(UNSCALE_X(self, text_extents.width));
+		if (pheight)
+			*pheight   = (int)floor(UNSCALE_Y(self, text_extents.height));
+		if (pxbearing)
+			*pxbearing = (int)floor(UNSCALE_X(self, text_extents.x_bearing));
+		if (pybearing)
+			*pybearing = (int)floor(UNSCALE_Y(self, text_extents.y_bearing));
+		if (pxadvance)
+			*pxadvance = (int)floor(UNSCALE_X(self, text_extents.x_advance));
+		if (pyadvance)
+			*pyadvance = (int)floor(UNSCALE_Y(self, text_extents.y_advance));
 	}
 
 	return av_cairo_error_check("cairo_text_extents", rc);

@@ -55,6 +55,8 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="m"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="cairo"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="SDL2"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="SDL2_image"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="png"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.436892699" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -65,7 +67,7 @@
 								<option defaultValue="true" id="gnu.cpp.link.so.debug.option.shared.95568765" name="Shared (-shared)" superClass="gnu.cpp.link.so.debug.option.shared" valueType="boolean"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.so.debug.880787622" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.so.debug">
-								<option id="gnu.both.asm.option.include.paths.280589502" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath"/>
+								<option id="gnu.both.asm.option.include.paths.280589502" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.575192963" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>

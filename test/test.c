@@ -14,7 +14,8 @@ main()
 //	TEST(test_avgl_create_destroy)
 //	TEST(test_window_absolute)
 //	TEST(test_event_mouse)
-	TEST(test_widgets)
+//	TEST(test_widgets)
+	TEST(test_bitmap_load)
 
 #ifdef _MSC_VER
 		_CrtDumpMemoryLeaks();

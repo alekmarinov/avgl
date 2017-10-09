@@ -14,24 +14,33 @@
 #include <avgl.h>
 #include <SDL.h>
 #include <SDL_keyboard.h>
+#include <SDL_image.h>
 
 /* imported prototypes */
 av_result_t av_display_sdl_register_oop(av_oop_p);
 av_result_t av_input_sdl_register_oop(av_oop_p);
 av_result_t av_timer_sdl_register_oop(av_oop_p);
 av_result_t av_surface_sdl_register_oop(av_oop_p);
+av_result_t av_bitmap_sdl_register_oop(av_oop_p);
 AV_API av_result_t av_system_sdl_register_oop(av_oop_p);
-
 /*
 av_result_t av_audio_sdl_register_oop(av_oop_p);
 */
 
-static void av_system_sdl_destructor(void* psystemsdl)
+
+av_result_t av_system_sdl_create_bitmap(av_system_p self, av_bitmap_p* pbitmap)
+{
+	return O_oop(self)->new(O_oop(self), "bitmap_sdl", (av_object_p*)pbitmap);
+}
+
+static void av_system_sdl_destructor(struct _av_object_t* psystemsdl)
 {
 	av_system_p self = (av_system_p)psystemsdl;
+	AV_UNUSED(self);
 
 	/* Quit SDL */
 	// _log->debug(_log, "SDL: Quiting");
+	IMG_Quit();
 	SDL_Quit();
 }
 
@@ -41,6 +50,7 @@ static av_result_t av_system_sdl_constructor(av_object_p object)
 	int sdl_flags;
 	av_result_t rc;
 	av_system_p self = (av_system_p)object;
+	self->create_bitmap = av_system_sdl_create_bitmap;
 
 	/* Initializes SDL library without catching any fatal signals */
 	sdl_flags = SDL_INIT_NOPARACHUTE | SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS;
@@ -49,6 +59,7 @@ static av_result_t av_system_sdl_constructor(av_object_p object)
 	if (AV_OK != (rc = av_sdl_error_check("SDL_Init", SDL_Init(sdl_flags))))
 		return rc;
 
+	IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 
 	/* Enable unicode translation of keyboard input */
 	// _log->debug(_log, "SDL: Enable UNICODE keyboard input translation");
@@ -77,6 +88,8 @@ AV_API av_result_t av_system_sdl_register_oop(av_oop_p oop)
 	if (AV_OK != (rc = av_timer_sdl_register_oop(oop)))
 		return rc;
 	if (AV_OK != (rc = av_surface_sdl_register_oop(oop)))
+		return rc;
+	if (AV_OK != (rc = av_bitmap_sdl_register_oop(oop)))
 		return rc;
 	
 	/*	if (AV_OK != (rc = av_audio_sdl_register_oop(oop)))

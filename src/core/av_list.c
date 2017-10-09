@@ -92,6 +92,20 @@ static av_result_t av_list_push_last(av_list_p self, void* value)
 	return AV_OK;
 }
 
+av_result_t av_list_push_all(av_list_p self, av_list_p list)
+{
+	struct list* list_ctx = (struct list*)list->context;
+	struct list_item* item;
+	av_assert(list_ctx, "list is not properly initialized");
+
+	item = list_ctx->first;
+	while (item)
+	{
+		self->push_last(self, item->value);
+		item = item->next;
+	}
+}
+
 /*
 *	Adds element next to the current element
 *
@@ -508,6 +522,7 @@ av_result_t av_list_create(av_list_p* pplist)
 
 	self->context     = ctx;
 	self->push_last   = av_list_push_last;
+	self->push_all    = av_list_push_all;
 	self->push_first  = av_list_push_first;
 	self->insert_next = av_list_insert_next;
 	self->insert_prev = av_list_insert_prev;

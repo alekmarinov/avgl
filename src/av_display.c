@@ -109,6 +109,7 @@ static void av_display_render(struct av_display* self)
 static av_result_t av_display_constructor(av_object_p object)
 {
 	av_display_p self           = (av_display_p)object;
+	self->display_config.scale_x = self->display_config.scale_y = 1;
 	self->enum_display_modes    = av_display_enum_display_modes;
 	self->set_configuration     = av_display_set_configuration;
 	self->get_configuration     = av_display_get_configuration;

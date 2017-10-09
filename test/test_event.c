@@ -52,7 +52,7 @@ int test_event_mouse()
 	av_window_p parent;
 	av_window_p child1;
 	av_window_p child2;
-	avgl_create();
+	avgl_create(AV_NULL);
 
 	parent = (av_window_p)avgl_create_visible(AV_NULL, 10, 10, 5, 5, AV_NULL);
 	parent->on_mouse_move = on_mouse_move_parent;

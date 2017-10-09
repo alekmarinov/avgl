@@ -36,19 +36,23 @@
 #include <av_tree.h>
 #include <av_display.h>
 #include <av_window.h>
+#include <av_bitmap.h>
 #include <av_stdc.h>
 
 typedef void (*on_paint_t)(av_visible_p visible, av_graphics_p graphics);
 
-AV_API av_bool_t avgl_create();
+AV_API av_bool_t avgl_create(av_display_config_p pdc);
 AV_API av_visible_p avgl_create_visible(av_visible_p parent, int x, int y, int w, int h, on_draw_t on_draw);
+AV_API av_visible_p avgl_create_visible_from_surface(av_visible_p parent, int x, int y, av_surface_p surface);
 AV_API void avgl_capture_visible(av_visible_p visible);
 AV_API av_result_t avgl_last_error();
 AV_API void avgl_loop();
-AV_API void avgl_step();
+AV_API av_bool_t avgl_step();
 AV_API void avgl_destroy();
 AV_API unsigned long avgl_time_now();
 AV_API void avgl_event_push(av_event_p event);
 AV_API av_bool_t avgl_event_poll(av_event_p event);
+AV_API av_bitmap_p avgl_load_bitmap(const char* filename);
+AV_API av_surface_p avgl_load_surface(const char* filename);
 
 #endif /* __AVGL_H */

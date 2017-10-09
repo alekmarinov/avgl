@@ -78,7 +78,7 @@ typedef struct av_surface
 	*/
 	void (*unlock)             (struct av_surface* self);
 
-	void (*set_bitmap)         (struct av_surface* self, av_bitmap_p bitmap);
+	av_result_t (*set_bitmap)         (struct av_surface* self, av_bitmap_p bitmap);
 
 	void (*render)             (struct av_surface* self, av_rect_p src_rect, av_rect_p dst_rect);
 } av_surface_t, *av_surface_p;

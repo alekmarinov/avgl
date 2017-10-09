@@ -54,6 +54,14 @@ typedef struct av_rect
 AV_API av_bool_t av_rect_init(av_rect_p, int, int, int, int);
 
 /*!
+* \brief Allocates new rectangle and copy the given rectangle as argument
+* \param rectangle
+* \return cloned rectangle
+*         - AV_NULL if not enough memory to allocate rectangle
+*/
+AV_API av_rect_p av_rect_clone(av_rect_p);
+
+/*!
 * \brief Compares two rectangles
 * \param rectangle 1
 * \param rectangle 2
@@ -137,6 +145,15 @@ AV_API void av_rect_set_size(av_rect_p, int, int);
 * \param source rectangle
 */
 AV_API void av_rect_copy(av_rect_p, av_rect_p);
+
+/*!
+* \brief Scale rectangle by x and y
+* \param rectangle to scale
+* \param factor scale x
+* \param factor scale y
+*/
+AV_API void av_rect_scale(av_rect_p, float, float);
+
 
 /*!
 * \brief Extends a rect to cover another rect

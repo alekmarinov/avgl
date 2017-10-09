@@ -10,10 +10,14 @@ static av_bool_t on_draw(av_visible_p self, av_graphics_p graphics)
 {
 	int r, g, b;
 	long addr = (long)self;
+	char buf[1024];
+	int tw, th;
 	printf("********** ON_DRAW!!!! \n");
 	av_rect_t rect;
+	av_rect_t absrect;
 	av_window_p window = (av_window_p)self;
 	window->get_rect(window, &rect);
+	window->get_absolute_rect(window, &absrect);
 	rect.x = rect.y = 0;
 	graphics->rectangle(graphics, &rect);
 	addr = (addr & 0xFFFF) ^ ((addr >> 16) & 0xFFFF);
@@ -23,6 +27,15 @@ static av_bool_t on_draw(av_visible_p self, av_graphics_p graphics)
 	graphics->set_color_rgba(graphics, (double)r/255, (double)g/255, (double)b/255, 0.8);
 	//graphics->set_color_rgba(graphics, 0.5, 0, 1, 0.3);
 	graphics->fill(graphics, 0);
+	graphics->move_to(graphics, 0, 1.5);
+	sprintf(buf, "%dx%d at %d,%d", absrect.w, absrect.h, absrect.x, absrect.y);
+	graphics->get_text_extents(graphics, buf, &tw, &th, AV_NULL, AV_NULL, AV_NULL, AV_NULL);
+	graphics->set_font_size(graphics, 1.5);
+//	graphics->set_scale(graphics, 10, 10);
+	graphics->text_path(graphics, buf);
+	graphics->set_color_rgba(graphics, 1-(double)r/255, 1-(double)g/255, 1-(double)b/255, 1);
+	graphics->stroke(graphics, 0);
+//	graphics->set_scale(graphics, 1, 1);
 	return AV_TRUE;
 }
 
@@ -118,9 +131,10 @@ static av_bool_t on_mouse_move(av_window_p self, int x, int y)
 			rect.h += (y - mouse_y);
 		}
 		self->set_rect(self, &rect);
-		printf("%p set_rect %d %d %d %d\n", self, rect.x, rect.y, rect.w, rect.h);
+//		printf("%p set_rect %d %d %d %d\n", self, rect.x, rect.y, rect.w, rect.h);
 		mouse_x = x;
 		mouse_y = y;
+//		((av_visible_p)self)->draw(self);
 		return AV_TRUE;
 	}
 	return AV_FALSE;
@@ -130,7 +144,7 @@ av_window_p new_window(av_window_p parent, int x, int y, int w, int h)
 {
 	av_window_p window;
 	window = (av_window_p)avgl_create_visible(parent, x, y, w, h, on_draw);
-	window->set_hover_delay(window, 1000);
+	window->set_hover_delay(window, 0);
 	window->on_mouse_move        = on_mouse_move;
 	window->on_mouse_button_down = on_mouse_button_down;
 	window->on_mouse_button_up   = on_mouse_button_up;
@@ -143,14 +157,22 @@ int test_widgets()
 {
 	av_window_p window;
 	int i;
+	av_display_config_t dc;
+	dc.width = 20;
+	dc.height = 18;
+	dc.scale_x = 50;
+	dc.scale_y = 40;
+	dc.mode = 0;
 
-	avgl_create();
+	avgl_create(&dc);
+//	avgl_create(AV_NULL);
 	for (i=0; i<2; i++)
 	{
 		window = new_window(AV_NULL, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT);
 		window->set_clip_children(window, 1);
 		window = new_window(window, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT);
 	}
+
 	avgl_loop();
 	avgl_destroy();
 	return 1;

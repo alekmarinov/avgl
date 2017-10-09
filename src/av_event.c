@@ -318,22 +318,22 @@ void av_event_dbg(av_event_p event)
 		av_dbg("quit\n")
 	break;
 	case AV_EVENT_KEYBOARD:
-		av_dbg("%s %s\n", event->button_status ? "pressed" : "released", key_to_str(event->key));
+		av_dbg("%p: %s %s\n", event->window, event->button_status ? "pressed" : "released", key_to_str(event->key));
 	break;
 	case AV_EVENT_MOUSE_BUTTON:
-		av_dbg("%s %s\n", event->button_status ? "pressed" : "released", mouse_button_to_str(event->mouse_button));
+		av_dbg("%p: %s %s\n", event->window, event->button_status ? "pressed" : "released", mouse_button_to_str(event->mouse_button));
 	break;
 	case AV_EVENT_MOUSE_MOTION:
-		av_dbg("mouse move at %d %d\n", event->mouse_x, event->mouse_y);
+		av_dbg("%p: mouse move at %d %d\n", event->window, event->mouse_x, event->mouse_y);
 	break;
 	case AV_EVENT_MOUSE_ENTER:
-		av_dbg("mouse enter at %d %d\n", event->mouse_x, event->mouse_y);
+		av_dbg("%p: mouse enter at %d %d\n", event->window, event->mouse_x, event->mouse_y);
 	break;
 	case AV_EVENT_MOUSE_HOVER:
-		av_dbg("mouse hover at %d %d\n", event->mouse_x, event->mouse_y);
+		av_dbg("%p: mouse hover at %d %d\n", event->window, event->mouse_x, event->mouse_y);
 	break;
 	case AV_EVENT_MOUSE_LEAVE:
-		av_dbg("mouse leave at %d %d\n", event->mouse_x, event->mouse_y);
+		av_dbg("%p: mouse leave at %d %d\n", event->window, event->mouse_x, event->mouse_y);
 	break;
 	case AV_EVENT_UPDATE:
 		av_dbg("update\n")
@@ -342,7 +342,7 @@ void av_event_dbg(av_event_p event)
 		av_dbg("focus window %p\n", event->window);
 	break;
 	case AV_EVENT_USER:
-		av_dbg("user %d with data = %p\n", event->user_id, event->data);
+		av_dbg("%p: user %d with data = %p\n", event->window, event->user_id, event->data);
 	break;
 	}
 }

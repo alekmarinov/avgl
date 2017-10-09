@@ -96,6 +96,17 @@ typedef struct av_list
 	av_result_t (*push_last) (struct av_list* self, void* value);
 
 	/*!
+	* \brief Adds all elements of a list after the last element of this list
+	*
+	* \param self is a reference to this object
+	* \param another list to add elements from
+	* \return av_result_t
+	*         - AV_OK on success
+	*         - AV_EMEM on out of memory
+	*/
+	av_result_t (*push_all) (struct av_list* self, struct av_list* list);
+
+	/*!
 	* \brief Adds element next to the current element
 	*
 	* \param self is a reference to this object

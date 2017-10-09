@@ -13,6 +13,8 @@
 #include <av_bitmap.h>
 #include "av_bitmap_sdl.h"
 #include "av_core_sdl.h"
+#include <av_stdc.h>
+#include <SDL_image.h>
 
 /* SDL interprets each pixel as a 32-bit number, so our masks must depend
 on the endianness (byte order) of the machine */
@@ -58,7 +60,7 @@ static av_result_t av_bitmap_sdl_load(struct _av_bitmap_t* object, const char* f
 	bitmap_sdl_ctx_p ctx = O_bitmap_context(object);
 	if (ctx->surface)
 		SDL_FreeSurface(ctx->surface);
-	ctx->surface = SDL_LoadBMP(filename);
+	ctx->surface = IMG_Load(filename);
 	if (!ctx->surface)
 		return av_sdl_error_check("SDL_LoadBMP", -1);
 	return AV_OK;
@@ -69,12 +71,17 @@ static void av_bitmap_sdl_destructor(av_object_p object)
 	bitmap_sdl_ctx_p ctx = O_bitmap_context(object);
 	if (ctx->surface)
 		SDL_FreeSurface(ctx->surface);
+	av_free(ctx);
 }
 
 /* Initializes memory given by the input pointer with the bitmap's class information */
 static av_result_t av_bitmap_sdl_constructor(av_object_p object)
 {
 	av_bitmap_p self = (av_bitmap_p)object;
+	bitmap_sdl_ctx_p ctx = (bitmap_sdl_ctx_p)av_calloc(1, sizeof(bitmap_sdl_ctx_t));
+	ctx->surface = AV_NULL;
+	O_set_attr(object, bitmap_context, ctx);
+
 	self->set_size    = av_bitmap_sdl_set_size;
 	self->get_size    = av_bitmap_sdl_get_size;
 	self->load        = av_bitmap_sdl_load;

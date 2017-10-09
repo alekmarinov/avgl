@@ -47,6 +47,8 @@ typedef struct _av_visible_t
 
 	void (*on_draw)(struct _av_visible_t* self, av_graphics_p graphics);
 
+	void (*set_surface)(struct _av_visible_t* self, av_surface_p surface);
+
 } av_visible_t, *av_visible_p;
 
 typedef void (*on_draw_t)(av_visible_p self, av_graphics_p graphics);
@@ -94,6 +96,8 @@ typedef struct av_system
 	void (*loop)                  (struct av_system* self);
 
 	av_result_t (*create_visible) (struct av_system* self, av_visible_p parent, av_rect_p rect, av_visible_p *pvisible);
+	av_result_t (*create_visible_from_surface) (struct av_system* self, av_visible_p parent, int x, int y, av_surface_p surface, av_visible_p *pvisible);
+	av_result_t (*create_bitmap) (struct av_system* self, av_bitmap_p* pbitmap);
 
 	/*!
 	* \brief Captures window to receive all mouse event

@@ -34,9 +34,9 @@ void avgl_loop()
 	avgl.system->loop(avgl.system);
 }
 
-void avgl_step()
+av_bool_t avgl_step()
 {
-	avgl.system->step(avgl.system);
+	return avgl.system->step(avgl.system);
 }
 
 void avgl_destroy()
@@ -61,7 +61,7 @@ av_result_t avgl_last_error()
 	return avgl.last_error;
 }
 
-av_bool_t avgl_create()
+av_bool_t avgl_create(av_display_config_p pdc)
 {
 	av_result_t rc;
 	av_rect_t winrect;
@@ -84,14 +84,23 @@ av_bool_t avgl_create()
 	avgl.oop->service_ref(avgl.oop, "system", (av_service_p*)&avgl.system);
 
 	av_display_config_t display_config;
-	display_config.width = 1280;
-	display_config.height = 768;
-	display_config.mode = 0;
+	if (!pdc)
+	{
+		display_config.width = 1280;
+		display_config.height = 1020;
+		display_config.scale_x = 1;
+		display_config.scale_y = 1;
+		display_config.mode = 0;
+	}
+	else
+	{
+		display_config = *pdc;
+	}
 
 	avgl.system->display->set_configuration(avgl.system->display, &display_config);
 
 	av_rect_init(&winrect, 0, 0, display_config.width, display_config.height);
-	avgl.system->create_visible(avgl.system, AV_NULL, &winrect, AV_NULL);
+	avgl_create_visible(AV_NULL, 0, 0, display_config.width, display_config.height, AV_NULL);
 
 	return AV_TRUE;
 }
@@ -113,9 +122,21 @@ av_visible_p avgl_create_visible(av_visible_p parent, int x, int y, int w, int h
 	return visible;
 }
 
+av_visible_p avgl_create_visible_from_surface(av_visible_p parent, int x, int y, av_surface_p surface)
+{
+	av_result_t rc;
+	av_visible_p visible;
+	if (AV_OK != (rc = avgl.system->create_visible_from_surface(avgl.system, parent, x, y, surface, &visible)))
+	{
+		avgl.last_error = rc;
+		return AV_NULL;
+	}
+	return visible;
+}
+
 void avgl_capture_visible(av_visible_p visible)
 {
-	avgl.system->set_capture(avgl.system, visible);
+	avgl.system->set_capture(avgl.system, (av_window_p)visible);
 }
 
 unsigned long avgl_time_now()
@@ -133,3 +154,49 @@ av_bool_t avgl_event_poll(av_event_p event)
 	return avgl.system->input->poll_event(avgl.system->input, event);
 }
 
+av_bitmap_p avgl_load_bitmap(const char* filename)
+{
+	av_result_t rc;
+	av_bitmap_p bitmap;
+
+	if (AV_OK != (rc = avgl.system->create_bitmap(avgl.system, &bitmap)))
+	{
+		avgl.last_error = rc;
+		return AV_NULL;
+	}
+
+	if (AV_OK != (rc = bitmap->load(bitmap, filename)))
+	{
+		O_destroy(bitmap);
+		avgl.last_error = rc;
+		return AV_NULL;
+	}
+
+	return bitmap;
+}
+
+av_surface_p avgl_load_surface(const char* filename)
+{
+	av_result_t rc;
+	av_surface_p surface;
+	av_bitmap_p bitmap = avgl_load_bitmap(filename);
+	if (!bitmap)
+		return AV_NULL;
+
+	if (AV_OK != (rc = avgl.system->display->create_surface(avgl.system->display, &surface)))
+	{
+		O_destroy(bitmap);
+		avgl.last_error = rc;
+		return AV_NULL;
+	}
+
+	if (AV_OK != (rc = surface->set_bitmap(surface, bitmap)))
+	{
+		O_destroy(surface);
+		O_destroy(bitmap);
+		avgl.last_error = rc;
+		return AV_NULL;
+	}
+
+	return surface;
+}

@@ -9,7 +9,7 @@
 /*********************************************************************/
 
 #include <av_rect.h>
-#include <malloc.h>
+#include <av_stdc.h>
 
 av_bool_t av_rect_init(av_rect_p rect, int x, int y, int w, int h)
 {
@@ -33,6 +33,15 @@ av_bool_t av_rect_init(av_rect_p rect, int x, int y, int w, int h)
 		res = AV_FALSE;
 	}
 	return res;
+}
+
+av_rect_p av_rect_clone(av_rect_p rect)
+{
+	av_rect_p new_rect;
+	av_assert(rect, "NULL rectangle argument is now allowed");
+	new_rect = (av_rect_p)av_malloc(sizeof(av_rect_t));
+	*new_rect = *rect;
+	return new_rect;
 }
 
 av_bool_t av_rect_compare(av_rect_p rect1, av_rect_p rect2)
@@ -164,7 +173,7 @@ av_result_t av_rect_substract(av_rect_p rectA, av_rect_p rectB, av_list_p* pplis
 
 			if (w > 0 && h > 0)
 			{
-				rect = (av_rect_p)malloc(sizeof(av_rect_t));
+				rect = (av_rect_p)av_malloc(sizeof(av_rect_t));
 				if (!rect)
 				{
 					rc = AV_EMEM;
@@ -188,7 +197,7 @@ av_result_t av_rect_substract(av_rect_p rectA, av_rect_p rectB, av_list_p* pplis
 av_rect_substract_err:
 	if (rlist)
 	{
-		rlist->iterate_all(rlist, free, AV_TRUE);
+		rlist->iterate_all(rlist, av_free, AV_TRUE);
 		rlist->destroy(rlist);
 	}
 	return rc;
@@ -237,6 +246,15 @@ void av_rect_copy(av_rect_p rectout, av_rect_p rectin)
 {
 	av_assert(rectout && rectin, "NULL rectangle argument is now allowed");
 	*rectout = *rectin;
+}
+
+void av_rect_scale(av_rect_p rectout, float scale_x, float scale_y)
+{
+	av_assert(rectout, "NULL rectangle argument is now allowed");
+	rectout->x = (int)((float)rectout->x * scale_x);
+	rectout->y = (int)((float)rectout->y * scale_y);
+	rectout->w = (int)((float)rectout->w * scale_x);
+	rectout->h = (int)((float)rectout->h * scale_y);
 }
 
 void av_rect_extend(av_rect_p rect_extend, av_rect_p rect_cover)

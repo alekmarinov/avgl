@@ -54,6 +54,12 @@ typedef struct av_display_config
 
 	/*! display resolution height */
 	int height;
+
+	/*! display scale x factor */
+	int scale_x;
+
+	/*! display scale y factor */
+	int scale_y;
 } av_display_config_t, *av_display_config_p;
 
 
@@ -86,6 +92,9 @@ typedef struct av_display
 	/*! Parent class service */
 	av_service_t object;
 
+	/*! Display configuration */
+	av_display_config_t display_config;
+
 	av_result_t (*enum_display_modes)(struct av_display* self, display_mode_callback_t vmcbk);
 
 	/*!
@@ -110,6 +119,7 @@ typedef struct av_display
 	*/
 	av_result_t (*get_configuration)(struct av_display* self, av_display_config_p config);
 
+	// FIXME: consider keeping only the one in system?
 	av_result_t (*create_bitmap)    (struct av_display* self, av_bitmap_p* bitmap);
 	av_result_t(*create_surface)   (struct av_display* self, av_surface_p* surface);
 

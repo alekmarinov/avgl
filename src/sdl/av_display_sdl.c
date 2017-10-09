@@ -66,29 +66,24 @@ static av_result_t av_display_sdl_set_configuration(av_display_p pdisplay, av_di
 	av_result_t rc;
 	av_display_sdl_p self = (av_display_sdl_p)pdisplay;
 	Uint32 sdlflags = 0;
-	av_display_config_t display_config;
 
-	if (AV_OK != (rc = pdisplay->get_configuration(pdisplay, &display_config)))
-		return rc;
-
-	if (av_display_config_compare(&display_config, new_display_config))
+	if (av_display_config_compare(&pdisplay->display_config, new_display_config))
 		return AV_OK; /* nothing to configure */
 
 	/* display mode */
-	display_config.mode = new_display_config->mode;
+	pdisplay->display_config.mode = new_display_config->mode;
 
-	if (display_config.mode & AV_DISPLAY_MODE_FULLSCREEN)
+	if (pdisplay->display_config.mode & AV_DISPLAY_MODE_FULLSCREEN)
 		sdlflags |= SDL_WINDOW_FULLSCREEN;
 
 	/* display resolution */
-	display_config.width = new_display_config->width;
-	display_config.height = new_display_config->height;
+	pdisplay->display_config = *new_display_config;
 
 	if (!self->window)
 	{
 		//extern DECLSPEC int SDLCALL SDL_CreateWindowAndRenderer(int width, int height, Uint32 window_flags,SDL_Window **window, SDL_Renderer **renderer);
 
-		if (0 > SDL_CreateWindowAndRenderer(display_config.width, display_config.height, sdlflags, &self->window, &self->renderer))
+		if (0 > SDL_CreateWindowAndRenderer(pdisplay->display_config.scale_x * pdisplay->display_config.width, pdisplay->display_config.scale_y * pdisplay->display_config.height, sdlflags, &self->window, &self->renderer))
 		{
 			// FIXME: provide logging
 			printf("%s\n", SDL_GetError());
@@ -106,15 +101,17 @@ static av_result_t av_display_sdl_get_configuration(av_display_p pdisplay, av_di
 	{
 		Uint32 flags = SDL_GetWindowFlags(self->window);
 		SDL_GetWindowSize(self->window, &display_config->width, &display_config->height);
+		display_config->scale_x = pdisplay->display_config.scale_x;
+		display_config->scale_y = pdisplay->display_config.scale_y;
+		display_config->width = display_config->width / display_config->scale_x;
+		display_config->height = display_config->height / display_config->scale_y;
 		display_config->mode = 0;
 		if (flags & SDL_WINDOW_FULLSCREEN)
 			display_config->mode |= AV_DISPLAY_MODE_FULLSCREEN;
 	}
 	else
 	{
-		display_config->width = 0;
-		display_config->height = 0;
-		display_config->mode = 0;
+		*display_config = pdisplay->display_config;
 	}
 	return AV_OK;
 }
