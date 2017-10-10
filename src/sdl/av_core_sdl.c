@@ -38,6 +38,7 @@ av_result_t av_sdl_error_process(int rc, const char* funcname, const char* srcfi
 		{
 			// _log->error(_log, "%s returned unknown error with message `%s' %s:%d", 
 			//						funcname, errmsg, srcfilename, linenumber);
+			averr = AV_EGENERAL;
 		}
 	}
 	return averr;

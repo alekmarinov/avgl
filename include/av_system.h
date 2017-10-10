@@ -21,37 +21,11 @@
 #include <av_window.h>
 #include <av_bitmap.h>
 #include <av_surface.h>
+#include <av_visible.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* forward declaration */
-struct av_system_t;
-
-
-
-/*!
-* \brief visible interface
-*
-*/
-typedef struct _av_visible_t
-{
-	av_window_t window;
-
-	struct av_system_t* system;
-
-	av_surface_p surface;
-
-	av_result_t (*draw)(struct _av_visible_t* self);
-
-	void (*on_draw)(struct _av_visible_t* self, av_graphics_p graphics);
-
-	void (*set_surface)(struct _av_visible_t* self, av_surface_p surface);
-
-} av_visible_t, *av_visible_p;
-
-typedef void (*on_draw_t)(av_visible_p self, av_graphics_p graphics);
 
 /*!
 * \brief system interface
@@ -59,7 +33,7 @@ typedef void (*on_draw_t)(av_visible_p self, av_graphics_p graphics);
 * OS abstraction layer dialing with system events,
 * providing audio, video and graphics interfaces
 */
-typedef struct av_system
+typedef struct _av_system_t
 {
 	/*! Parent class service */
 	av_service_t service;
@@ -85,26 +59,28 @@ typedef struct av_system
 	* \return - AV_FALSE is the last processed event has been AV_EVENT_QUIT
 	*         - AV_TRUE otherwise
 	*/
-	av_bool_t (*step)             (struct av_system* self);
+	av_bool_t (*step)             (struct _av_system_t* self);
 
-	int (*flush_events)           (struct av_system* self);
+	int (*flush_events)           (struct _av_system_t* self);
 
 	/*!
 	* \brief Main application loop
 	* \param self is a reference to this object
 	*/
-	void (*loop)                  (struct av_system* self);
+	void (*loop)                  (struct _av_system_t* self);
 
-	av_result_t (*create_visible) (struct av_system* self, av_visible_p parent, av_rect_p rect, av_visible_p *pvisible);
-	av_result_t (*create_visible_from_surface) (struct av_system* self, av_visible_p parent, int x, int y, av_surface_p surface, av_visible_p *pvisible);
-	av_result_t (*create_bitmap) (struct av_system* self, av_bitmap_p* pbitmap);
+	av_result_t(*invalidate_rect)  (struct _av_system_t* self, av_rect_p rect);
+	av_result_t(*invalidate_rects) (struct _av_system_t* self, av_list_p rects);
+	av_visible_p (*get_root_visible) (struct _av_system_t* self);
+	void  (*set_root_visible) (struct _av_system_t* self, av_visible_p root);
+	av_result_t (*create_bitmap) (struct _av_system_t* self, av_bitmap_p* pbitmap);
 
 	/*!
 	* \brief Captures window to receive all mouse event
 	* \param self is a reference to this object
 	* \param window to be captured or AV_NULL to uncapture
 	*/
-	void (*set_capture)           (struct av_system* self, av_window_p window);
+	void (*set_capture)           (struct _av_system_t* self, av_window_p window);
 
 } av_system_t, *av_system_p;
 

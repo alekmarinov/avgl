@@ -18,7 +18,6 @@ typedef struct _window_ctx_t
 	av_window_p           parent;
 	av_bool_t             visible;
 	av_bool_t             clip_children;
-	int                   last_default_pos;
 	av_bool_t             painted;
 } window_ctx_t, *window_ctx_p;
 
@@ -368,47 +367,6 @@ static av_bool_t av_window_point_inside(av_window_p self, int x, int y)
 	return av_rect_point_inside(&rect, x, y);
 }
 
-static void av_window_manage_rect(av_window_p self, av_rect_p rect)
-{
-	window_ctx_p ctx = O_context(self);
-	av_assert(ctx, "window is not properly initialized");
-
-	if (rect->w == AV_DEFAULT)
-	{
-		if (rect->h != AV_DEFAULT)
-			rect->w = 2*rect->h/3;
-		else
-			rect->w = 2*ctx->rect.w/3;
-	}
-
-	if (rect->h == AV_DEFAULT)
-		rect->h = 2*rect->w/3;
-
-	if (rect->x == AV_DEFAULT || rect->y == AV_DEFAULT)
-	{
-		switch (ctx->last_default_pos)
-		{
-			case 0: /* top/right */
-				rect->y = 0;
-				rect->x = ctx->rect.w - rect->w;
-			break;
-			case 1: /* bottom/left */
-				rect->y = ctx->rect.h - rect->h;
-				rect->x = 0;
-			break;
-			case 2: /* top/left */
-				rect->y = 0;
-				rect->x = 0;
-			break;
-			case 3: /* bottom/right */
-				rect->y = ctx->rect.h - rect->h;
-				rect->x = ctx->rect.w - rect->w;
-			break;
-		}
-		ctx->last_default_pos = (ctx->last_default_pos + 1) % 4;
-	}
-}
-
 /* Sets new window rectangle */
 av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 {
@@ -418,9 +376,6 @@ av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 	av_list_p children = self->get_children(self);
 	av_window_p parent =          /* parent window */
 		self->get_parent(self);
-
-	if (parent)
-		av_window_manage_rect(parent, newrect);
 
 	self->get_rect(self, &oldrect);
 	if (av_rect_compare(newrect, &oldrect))

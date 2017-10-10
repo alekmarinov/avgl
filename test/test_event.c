@@ -1,6 +1,7 @@
 #include <avgl.h>
 #include <stdio.h>
 
+/*
 static av_bool_t parent_move = AV_FALSE;
 static av_bool_t child_move = AV_FALSE;
 static av_bool_t child_move_bubble = AV_FALSE;
@@ -91,3 +92,4 @@ int test_event_mouse()
 	avgl_destroy();
 	return 1;
 }
+*/

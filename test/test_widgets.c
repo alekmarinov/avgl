@@ -1,5 +1,11 @@
-#include <avgl.h>
+#ifdef _WIN32
+//#define vsnprintf _vsnprintf
+//#define snprintf _snprintf
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
+#include <avgl.h>
+/*
 #define XRES 1024
 #define YRES 768
 
@@ -28,7 +34,7 @@ static av_bool_t on_draw(av_visible_p self, av_graphics_p graphics)
 	//graphics->set_color_rgba(graphics, 0.5, 0, 1, 0.3);
 	graphics->fill(graphics, 0);
 	graphics->move_to(graphics, 0, 1.5);
-	sprintf(buf, "%dx%d at %d,%d", absrect.w, absrect.h, absrect.x, absrect.y);
+	snprintf(buf, 1024, "%dx%d at %d,%d", absrect.w, absrect.h, absrect.x, absrect.y);
 	graphics->get_text_extents(graphics, buf, &tw, &th, AV_NULL, AV_NULL, AV_NULL, AV_NULL);
 	graphics->set_font_size(graphics, 1.5);
 //	graphics->set_scale(graphics, 10, 10);
@@ -68,8 +74,8 @@ static av_bool_t on_mouse_button_down(av_window_p self, av_event_mouse_button_t 
 	}
 	else if (AV_MOUSE_BUTTON_WHEEL == button)
 	{
-/*		self->origin_y ++;
-		self->update(self, AV_UPDATE_INVALIDATE);*/
+//		self->origin_y ++;
+// self->update(self, AV_UPDATE_INVALIDATE);
 	}
 	return AV_FALSE;
 }
@@ -90,8 +96,8 @@ static av_bool_t on_mouse_button_up(av_window_p self, av_event_mouse_button_t bu
 	}
 	else if (AV_MOUSE_BUTTON_WHEEL == button)
 	{
-/*		self->origin_y--;
-		self->update(self, AV_UPDATE_INVALIDATE);*/
+//		self->origin_y--;
+	//	self->update(self, AV_UPDATE_INVALIDATE);
 	}
 	return AV_FALSE;
 }
@@ -177,3 +183,4 @@ int test_widgets()
 	avgl_destroy();
 	return 1;
 }
+*/

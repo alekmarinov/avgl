@@ -24,15 +24,6 @@
 extern "C" {
 #endif
 
-/*!
-* \brief Pass this macro instead of fixed window position or size
-*/
-#define AV_DEFAULT AV_MAXINT
-
-/* forward reference to system class definition */
-struct av_system;
-
-
 typedef enum
 {
 	AV_UPDATE_INVALIDATE,
@@ -44,7 +35,7 @@ typedef enum
 *	A window may have a parent window to which it is attached. A window without a parent is a root window.
 *	All windows represents a rectangular areas which can overlap to each other.
 *	The windows have a z-order as they appear on the screen which by default is their creation order.
-*	The newer windows are on top of the others. The z-order of a window can be changed via the methods
+*	The newer windows are on top of the olders. The z-order of a window can be changed via the methods
 *	\c raise_top, \c lower_bottom. A part of area occuppied by a window can be \b invalidated caused
 *	by the usage any of the following methods: \c set_window_rect, \c invalidate, \c invalidate_rect
 *	executed against a certain window. Once an area is invalidated it is registered to the system object

@@ -61,7 +61,7 @@ av_result_t avgl_last_error()
 	return avgl.last_error;
 }
 
-av_bool_t avgl_create(av_display_config_p pdc)
+av_visible_p avgl_create(av_display_config_p pdc)
 {
 	av_result_t rc;
 	av_rect_t winrect;
@@ -69,7 +69,7 @@ av_bool_t avgl_create(av_display_config_p pdc)
 	if (AV_OK != (rc = av_oop_create(&avgl.oop)))
 	{
 		avgl.last_error = rc;
-		return AV_FALSE;
+		return AV_NULL;
 	}
 
 	/* Initialize logging */
@@ -100,38 +100,7 @@ av_bool_t avgl_create(av_display_config_p pdc)
 	avgl.system->display->set_configuration(avgl.system->display, &display_config);
 
 	av_rect_init(&winrect, 0, 0, display_config.width, display_config.height);
-	avgl_create_visible(AV_NULL, 0, 0, display_config.width, display_config.height, AV_NULL);
-
-	return AV_TRUE;
-}
-
-av_visible_p avgl_create_visible(av_visible_p parent, int x, int y, int w, int h, on_draw_t on_draw)
-{
-	av_result_t rc;
-	av_rect_t rect;
-	av_visible_p visible;
-	av_rect_init(&rect, x, y, w, h);
-	if (AV_OK != (rc = avgl.system->create_visible(avgl.system, parent, &rect, &visible)))
-	{
-		avgl.last_error = rc;
-		return AV_NULL;
-	}
-	if (on_draw)
-		visible->on_draw = on_draw;
-	visible->draw(visible);
-	return visible;
-}
-
-av_visible_p avgl_create_visible_from_surface(av_visible_p parent, int x, int y, av_surface_p surface)
-{
-	av_result_t rc;
-	av_visible_p visible;
-	if (AV_OK != (rc = avgl.system->create_visible_from_surface(avgl.system, parent, x, y, surface, &visible)))
-	{
-		avgl.last_error = rc;
-		return AV_NULL;
-	}
-	return visible;
+	return avgl.system->get_root_visible(avgl.system);
 }
 
 void avgl_capture_visible(av_visible_p visible)

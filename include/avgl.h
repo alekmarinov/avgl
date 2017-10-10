@@ -41,9 +41,7 @@
 
 typedef void (*on_paint_t)(av_visible_p visible, av_graphics_p graphics);
 
-AV_API av_bool_t avgl_create(av_display_config_p pdc);
-AV_API av_visible_p avgl_create_visible(av_visible_p parent, int x, int y, int w, int h, on_draw_t on_draw);
-AV_API av_visible_p avgl_create_visible_from_surface(av_visible_p parent, int x, int y, av_surface_p surface);
+AV_API av_visible_p avgl_create(av_display_config_p pdc);
 AV_API void avgl_capture_visible(av_visible_p visible);
 AV_API av_result_t avgl_last_error();
 AV_API void avgl_loop();

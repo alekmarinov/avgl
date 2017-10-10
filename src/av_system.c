@@ -11,8 +11,6 @@
 #include <avgl.h>
 #include <av_debug.h>
 
-av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect);
-
 typedef struct _system_ctx_t
 {
 	/*! Root visible */
@@ -43,61 +41,19 @@ typedef struct _hover_info_t
 	av_bool_t hovered;
 } hover_info_t, *hover_info_p;
 
-static void av_visible_on_invalidate(av_window_p window, av_rect_p rect)
-{
-}
-
-static av_result_t av_visible_set_rect(struct av_window* pwindow, av_rect_p rect)
-{
-	av_result_t rc;
-	av_window_p window = (av_window_p)pwindow;
-	av_visible_p self = (av_visible_p)window;
-	system_ctx_p system_ctx = O_context(self->system);
-	av_rect_t old_rect;
-	av_rect_t new_rect;
-	av_list_p inv_list;
-
-	window->get_absolute_rect(window, &old_rect);
-	av_window_set_rect(window, rect);
-	window->get_absolute_rect(window, &new_rect);
-
-	if (av_rect_compare(&old_rect, &new_rect))
-		return AV_OK;
-
-	if (self->surface && (old_rect.w != rect->w || old_rect.h != rect->h))
-	{
-		av_system_p system = (av_system_p)self->system;
-		int sx = system->display->display_config.scale_x;
-		int sy = system->display->display_config.scale_y;
-		if (AV_OK != (rc = self->surface->set_size(self->surface, rect->w * sx, rect->h * sy)))
-			return rc;
-
-		self->draw(self);
-	}
-
-
-	system_ctx->invalid_rects->push_last(system_ctx->invalid_rects, av_rect_clone(&new_rect));
-	if (AV_OK == av_rect_substract(&old_rect, &new_rect, &inv_list))
-	{
-		system_ctx->invalid_rects->push_all(system_ctx->invalid_rects, inv_list);
-	}
-
-	return AV_OK;
-}
-
-static void av_visible_on_draw(struct _av_visible_t* self, av_graphics_p graphics)
+static void av_visible_root_on_draw(struct _av_visible_t* self, av_graphics_p graphics)
 {
 	av_rect_t rect;
 	system_ctx_p system_ctx = O_context(self->system);
 	av_display_config_t display_config;
 	((av_system_p)self->system)->display->get_configuration(((av_system_p)self->system)->display, &display_config);
-
-	((av_window_p)self)->get_rect((av_window_p)self, &rect);
 	rect.x = rect.y = 0;
+	rect.w = display_config.width;
+	rect.h = display_config.height;
 	graphics->set_color_rgba(graphics, 0, 0, 0, 1);
 	graphics->rectangle(graphics, &rect);
 	graphics->fill(graphics, AV_FALSE);
-	if (system_ctx->root == self && (display_config.scale_x != 1 || display_config.scale_y != 1))
+	if (display_config.scale_x != 1 || display_config.scale_y != 1)
 	{
 		// draw grid
 		int x, y;
@@ -117,71 +73,21 @@ static void av_visible_on_draw(struct _av_visible_t* self, av_graphics_p graphic
 	}
 }
 
-static void av_visible_set_surface(struct _av_visible_t* visible, av_surface_p surface)
+static void av_visible_root_on_destroy(struct _av_visible_t* self)
 {
-	av_visible_p self = (av_visible_p)visible;
-	av_dbg("av_visible_set_surface: %p -> %p\n", self, surface);
-	self->surface = surface;
-}
-
-static av_result_t av_visible_draw(struct _av_visible_t* visible)
-{
-	av_graphics_surface_p graphics_surace;
-	av_pixel_p pixels;
-	int pitch;
-	av_result_t rc;
-	av_visible_p self = (av_visible_p)visible;
-	av_system_p system = (av_system_p)self->system;
-	av_rect_t rect;
-	int sx = system->display->display_config.scale_x;
-	int sy = system->display->display_config.scale_y;
-
-	((av_window_p)self)->get_rect((av_window_p)self, &rect);
-	if (AV_OK != (rc = self->surface->lock(self->surface, &pixels, &pitch)))
-		return rc;
-
-	system->graphics->create_surface_from_data(system->graphics, rect.w * sx, rect.h * sy, pixels, pitch, &graphics_surace);
-	system->graphics->begin(system->graphics, graphics_surace);
-	system->graphics->scale_x = sx;
-	system->graphics->scale_y = sy;
-	self->on_draw(self, system->graphics);
-	system->graphics->end(system->graphics);
-	self->surface->unlock(self->surface);
-	O_destroy(graphics_surace);
-	return AV_OK;
-}
-
-static void av_visible_destructor(struct _av_object_t* pvisible)
-{
-	av_visible_p self = (av_visible_p)pvisible;
-	system_ctx_p system_ctx = O_context(self->system);
-
-	if (self == system_ctx->root)
-		system_ctx->root = AV_NULL;
-
-	if (self->surface)
-		O_destroy(self->surface);
-}
-
-static av_result_t av_visible_constructor(av_object_p object)
-{
-	((av_window_p)object)->set_rect = av_visible_set_rect;
-	return AV_OK;
+	system_ctx_p ctx = O_context(self->system);
+	ctx->root = AV_NULL;
 }
 
 static void render_recurse(av_system_p self, av_visible_p visible)
 {
 	av_window_p window = (av_window_p)visible;
-	av_rect_t dst_rect;
 	av_rect_t src_rect;
 	av_list_p children;
 	av_display_config_t display_config;
 	system_ctx_p ctx = O_context(self);
 	av_list_p invrects = ctx->invalid_rects;
 
-//	window->get_rect(window, &dst_rect);
-//	src_rect = dst_rect;
-//	src_rect.x = src_rect.y = 0;
 	self->display->get_configuration(self->display, &display_config);
 
 	for (invrects->first(invrects); invrects->has_more(invrects); invrects->next(invrects))
@@ -197,8 +103,8 @@ static void render_recurse(av_system_p self, av_visible_p visible)
 			src_rect.x -= winrect.x;
 			src_rect.y -= winrect.y;
 
-			av_rect_scale(&src_rect, display_config.scale_x, display_config.scale_y);
-			av_rect_scale(&irect, display_config.scale_x, display_config.scale_y);
+			av_rect_scale(&src_rect, (float)display_config.scale_x, (float)display_config.scale_y);
+			av_rect_scale(&irect, (float)display_config.scale_x, (float)display_config.scale_y);
 			av_dbg("render_scaled %p: %d %d %d %d -> %d %d %d %d\n",
 					visible->surface,
 					src_rect.x, src_rect.y, src_rect.w, src_rect.h,
@@ -290,6 +196,7 @@ static av_result_t add_hover_info(av_system_p system, av_window_p window, int x,
 
 static av_bool_t av_system_inject_event(av_system_p self, av_event_p event)
 {
+	/* FIXME: implement this */
 }
 
 static av_bool_t av_system_step(av_system_p self)
@@ -437,8 +344,6 @@ static av_bool_t av_system_step(av_system_p self)
 
 	//	av_event_dbg(&event);
 
-
-	// FIXME: Render only invalidated rects
 	if (ctx->root)
 		render_recurse(self, ctx->root);
 
@@ -459,110 +364,87 @@ static void av_system_loop(av_system_p self)
 		self->timer->sleep_ms(10);
 }
 
-static av_result_t av_system_create_visible(av_system_p self, av_visible_p parent, av_visible_p *pvisible)
+static av_visible_p av_system_get_root_visible(struct _av_system_t* self)
 {
 	system_ctx_p ctx = O_context(self);
-	av_visible_p visible;
-	av_oop_p oop = ((av_object_p)self)->classref->oop;
-	av_result_t rc;
-
-	if (AV_OK != (rc = oop->new(oop, "visible", (av_object_p*)&visible)))
-		return rc;
-
-	visible->draw = av_visible_draw;
-	visible->on_draw = av_visible_on_draw;
-	visible->set_surface = av_visible_set_surface;
-	visible->system = (struct av_system_t*)self;
-	((av_window_p)visible)->on_invalidate = av_visible_on_invalidate;
-
-	if (!ctx->root)
-		ctx->root = visible;
-	else if (!parent)
-		parent = ctx->root;
-
-	if (AV_OK != (rc = ((av_window_p)visible)->set_parent((av_window_p)visible, (av_window_p)parent)))
-	{
-		O_destroy(visible);
-		return rc;
-	}
-
-	*pvisible = visible;
-	return AV_OK;
+	return ctx->root;
 }
 
-static av_result_t av_system_create_visible_from_rect(av_system_p self, av_visible_p parent, av_rect_p rect, av_visible_p *pvisible)
+static void av_system_set_root_visible(struct _av_system_t* self, av_visible_p root)
 {
-	av_rect_t arect;
-	av_display_config_t display_config;
-	av_visible_p visible;
-	av_result_t rc;
-
-	self->display->get_configuration(self->display, &display_config);
-
-	if (rect)
-		av_rect_copy(&arect, rect);
-	else
-		av_rect_init(&arect, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT);
-
-	if (AV_OK != (rc = av_system_create_visible(self, parent, &visible)))
-	{
-		return rc;
-	}
-
-	if (AV_OK != (rc = self->display->create_surface(self->display, &visible->surface)))
-	{
-		O_destroy(visible);
-		return rc;
-	}
-	((av_window_p)visible)->set_rect((av_window_p)visible, &arect);
-	if (AV_OK != (rc = visible->surface->set_size(visible->surface, arect.w * display_config.scale_x, arect.h * display_config.scale_y)))
-	{
-		O_destroy(visible);
-		return rc;
-	}
-
-	if (pvisible)
-		*pvisible = visible;
-	return AV_OK;
+	system_ctx_p ctx = O_context(self);
+	if (ctx->root)
+		O_destroy(ctx->root);
+	ctx->root = root;
 }
 
-
-static av_result_t av_system_create_visible_from_surface(av_system_p self, av_visible_p parent, int x, int y, av_surface_p surface, av_visible_p *pvisible)
-{
-	av_rect_t rect;
-	av_visible_p visible;
-	av_result_t rc;
-	surface->get_size(surface, &rect.w, &rect.h);
-	rect.x = x;
-	rect.y = y;
-
-	if (AV_OK != (rc = av_system_create_visible(self, parent, &visible)))
-	{
-		return rc;
-	}
-	if (AV_OK != (rc = ((av_window_p)visible)->set_rect((av_window_p)visible, &rect)))
-	{
-		O_destroy(visible);
-		return rc;
-	}
-	visible->surface = surface;
-	if (pvisible)
-		*pvisible = visible;
-	return AV_OK;
-}
-
-static av_result_t av_system_create_bitmap(av_system_p self, av_bitmap_p* pbitmap)
+static av_result_t av_system_create_bitmap(struct _av_system_t* self, av_bitmap_p* pbitmap)
 {
 	AV_UNUSED(self);
 	AV_UNUSED(pbitmap);
 	return AV_ESUPPORTED;
 }
 
-static void av_system_set_capture(av_system_p self, av_window_p window)
+static void av_system_set_capture(struct _av_system_t* self, av_window_p window)
 {
 	system_ctx_p ctx = O_context(self);
 	ctx->capture = window;
 }
+
+static av_result_t av_system_invalidate_rect(struct _av_system_t* self, av_rect_p rect)
+{
+	system_ctx_p ctx = O_context(self);
+	return ctx->invalid_rects->push_last(ctx->invalid_rects, av_rect_clone(rect));
+}
+
+static av_result_t av_system_invalidate_rects(struct _av_system_t* self, av_list_p rects)
+{
+	system_ctx_p ctx = O_context(self);
+	return ctx->invalid_rects->push_all(ctx->invalid_rects, rects);
+}
+
+av_result_t av_system_create_visible(struct _av_system_t* system, av_visible_p parent, av_rect_p rect, on_draw_t on_draw, av_surface_p surface, struct _av_visible_t **pvisible)
+{
+	av_oop_p oop = ((av_object_p)system)->classref->oop;
+	av_rect_t arect;
+	av_visible_p visible;
+	av_result_t rc;
+
+	if (AV_OK != (rc = oop->new(oop, "visible", (av_object_p*)&visible)))
+		return rc;
+
+	visible->on_draw = on_draw;
+	visible->system = (struct _av_system_t*)system;
+	if (!parent)
+		parent = system->get_root_visible(system);
+	if (AV_OK != (rc = ((av_window_p)visible)->set_parent((av_window_p)visible, (av_window_p)parent)))
+	{
+		O_destroy(visible);
+		return rc;
+	}
+
+	av_rect_copy(&arect, rect);
+
+	if (surface)
+	{
+		surface->get_size(surface, &arect.w, &arect.h);
+	}
+	else
+	{
+		if (AV_OK != (rc = system->display->create_surface(system->display, &visible->surface)))
+		{
+			O_destroy(visible);
+			return rc;
+		}
+	}
+	((av_window_p)visible)->set_rect((av_window_p)visible, &arect);
+	if (surface)
+		visible->surface = surface;
+
+	*pvisible = visible;
+	return AV_OK;
+}
+
 
 static void av_system_destructor(void* psystem)
 {
@@ -591,6 +473,7 @@ static av_result_t av_system_constructor(av_object_p object)
 	av_oop_p oop;
 	system_ctx_p ctx;
 	av_system_p self        = (av_system_p)object;
+	av_rect_t root_rect;
 
 	ctx = (system_ctx_p)av_calloc(1, sizeof(system_ctx_t));
 	if (!ctx) return AV_EMEM;
@@ -598,7 +481,6 @@ static av_result_t av_system_constructor(av_object_p object)
 
 	if (AV_OK != (rc = av_list_create(&ctx->invalid_rects)))
 		return rc;
-
 
 	if (AV_OK != (rc = av_list_create(&ctx->hover_windows)))
 		return rc;
@@ -621,10 +503,22 @@ static av_result_t av_system_constructor(av_object_p object)
 
 	self->step              = av_system_step;
 	self->loop              = av_system_loop;
-	self->create_visible    = av_system_create_visible_from_rect;
-	self->create_visible_from_surface = av_system_create_visible_from_surface;
+	self->get_root_visible  = av_system_get_root_visible;
+	self->set_root_visible  = av_system_set_root_visible;
 	self->create_bitmap     = av_system_create_bitmap;
 	self->set_capture       = av_system_set_capture;
+	self->invalidate_rect   = av_system_invalidate_rect;
+	self->invalidate_rects  = av_system_invalidate_rects;
+
+	/* create root visible */
+	root_rect.x = 0;
+	root_rect.y = 0;
+	root_rect.w = self->display->display_config.width;
+	root_rect.h = self->display->display_config.height;
+	if (AV_OK != (rc = av_system_create_visible(self, AV_NULL, &root_rect, av_visible_root_on_draw, AV_NULL, &ctx->root)))
+		return rc;
+	ctx->root->on_destroy = av_visible_root_on_destroy;
+
 	return AV_OK;
 }
 
@@ -633,13 +527,7 @@ av_result_t av_system_register_oop(av_oop_p oop)
 {
 	av_result_t rc;
 
-	av_window_register_oop(oop);
-
-	if (AV_OK != (rc = oop->define_class(oop, "visible", "window",
-										 sizeof(av_visible_t),
-										 av_visible_constructor,
-										 av_visible_destructor)))
-		return rc;
+	av_visible_register_oop(oop);
 
 	if (AV_OK != (rc = av_display_register_oop(oop)))
 		return rc;

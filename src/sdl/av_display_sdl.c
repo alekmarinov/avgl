@@ -65,7 +65,7 @@ static av_result_t av_display_sdl_set_configuration(av_display_p pdisplay, av_di
 {
 	av_result_t rc;
 	av_display_sdl_p self = (av_display_sdl_p)pdisplay;
-	Uint32 sdlflags = 0;
+	Uint32 sdlflags = 0;//  SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
 
 	if (av_display_config_compare(&pdisplay->display_config, new_display_config))
 		return AV_OK; /* nothing to configure */

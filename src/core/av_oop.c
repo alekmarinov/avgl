@@ -18,7 +18,7 @@ static const char* object_class_name = "object";
 static const char* service_class_name = "service";
 
 // FiXME: shut dbg messages
-#define av_dbg(x...)
+#define av_dbg(x, ...)
 
 /* av_object_t implementation */
 /* --------------------------- */
