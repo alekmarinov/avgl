@@ -28,8 +28,7 @@ av_bool_t sprite_timer(void* arg)
 	return AV_FALSE;
 }
 
-int girl_x = 0;
-int girl_y = 0;
+
 int girl_dx = 40;
 int girl_dy = 40;
 av_bool_t girl_move_timer(void* arg)
@@ -75,7 +74,17 @@ int test_sprite()
 		goto quit;
 	}
 
-	for (int i = 0; i < 10; i++)
+	main->create_child(main, "sprite", (av_visible_p*)&sprite);
+	((av_visible_p)sprite)->set_surface((av_visible_p)sprite, girl_surface);
+	sprite->set_size(sprite, girl_width, girl_height);
+	rect.x = rect.y = 0;
+	rect.w = girl_width;
+	rect.h = girl_height;
+	((av_window_p)sprite)->set_rect((av_window_p)sprite, &rect);
+	sprite->set_sequence(sprite, seq_girl, 6, 700, AV_TRUE);
+	system->timer->add_timer(system->timer, girl_move_timer, 200, sprite, AV_NULL);
+
+	for (int i = 0; i < 5; i++)
 	{
 		rect.x = (int)((float)1000 * RAND);
 		rect.y = (int)((float)1000 * RAND);
@@ -88,14 +97,6 @@ int test_sprite()
 		system->timer->add_timer(system->timer, sprite_timer, (int)((float)2000 * RAND), sprite, AV_NULL);
 	}
 
-	main->create_child(main, "sprite", (av_visible_p*)&sprite);
-	((av_visible_p)sprite)->set_surface((av_visible_p)sprite, girl_surface);
-	sprite->set_size(sprite, girl_width, girl_height);
-	rect.w = girl_width;
-	rect.h = girl_height;
-	((av_window_p)sprite)->set_rect((av_window_p)sprite, &rect);
-	sprite->set_sequence(sprite, seq_girl, 6, 700, AV_TRUE);
-	system->timer->add_timer(system->timer, girl_move_timer, 200, sprite, AV_NULL);
 
 	avgl_loop();
 quit:
