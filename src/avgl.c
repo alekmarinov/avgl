@@ -64,7 +64,6 @@ av_result_t avgl_last_error()
 av_visible_p avgl_create(av_display_config_p pdc)
 {
 	av_result_t rc;
-	av_rect_t winrect;
 
 	if (AV_OK != (rc = av_oop_create(&avgl.oop)))
 	{
@@ -83,6 +82,8 @@ av_visible_p avgl_create(av_display_config_p pdc)
 	av_system_sdl_register_oop(avgl.oop);
 	avgl.oop->service_ref(avgl.oop, "system", (av_service_p*)&avgl.system);
 
+	av_sprite_register_oop(avgl.oop);
+
 	av_display_config_t display_config;
 	if (!pdc)
 	{
@@ -96,12 +97,14 @@ av_visible_p avgl_create(av_display_config_p pdc)
 	{
 		display_config = *pdc;
 	}
-
-	avgl.system->display->set_configuration(avgl.system->display, &display_config);
-
-	av_rect_init(&winrect, 0, 0, display_config.width, display_config.height);
+	if (AV_OK != (rc = avgl.system->initialize(avgl.system, &display_config)))
+	{
+		avgl.last_error = rc;
+		return AV_NULL;
+	}
 	return avgl.system->get_root_visible(avgl.system);
 }
+
 
 void avgl_capture_visible(av_visible_p visible)
 {

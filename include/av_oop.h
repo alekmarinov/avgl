@@ -205,7 +205,7 @@ typedef struct _av_object_t
 #define O_set_attr(o, name, value) ((av_object_p)(o))->set_attribute((av_object_p)(o), name, value)
 
 /*! A shortcut to \c is_a method of an object */
-#define O_is_a(o, classname) ((av_object_p)(o))->is_a((av_object_p)(o), classname)
+#define O_is_a(o, classname) (((av_object_p)(o))->is_a((av_object_p)(o), classname))
 
 /*! A shortcut to \c tostring method of an object */
 #define O_tostring(o, b, c)  ((av_object_p)(o))->tostring((av_object_p)(o), b, c)

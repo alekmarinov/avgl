@@ -12,7 +12,6 @@
 #include <av_debug.h>
 
 av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect);
-av_result_t av_system_create_visible(av_system_p system, av_visible_p parent, av_rect_p rect, on_draw_t drawer, av_surface_p surface, av_visible_p *pvisible);
 
 static av_result_t av_visible_set_rect(struct av_window* pwindow, av_rect_p rect)
 {
@@ -28,10 +27,7 @@ static av_result_t av_visible_set_rect(struct av_window* pwindow, av_rect_p rect
 	av_window_set_rect(window, rect);
 	window->get_absolute_rect(window, &new_rect);
 
-	if (av_rect_compare(&old_rect, &new_rect))
-		return AV_OK;
-
-	if (self->surface && (old_rect.w != rect->w || old_rect.h != rect->h))
+	if (self->is_owner_draw && self->surface && (old_rect.w != rect->w || old_rect.h != rect->h))
 	{
 		av_system_p system = (av_system_p)self->system;
 		int sx = system->display->display_config.scale_x;
@@ -42,13 +38,22 @@ static av_result_t av_visible_set_rect(struct av_window* pwindow, av_rect_p rect
 		self->draw(self);
 	}
 
-	system->invalidate_rect(system, &new_rect);
-	if (AV_OK == av_rect_substract(&old_rect, &new_rect, &inv_list))
+	if (system)
 	{
-		system->invalidate_rects(system, inv_list);
+		system->invalidate_rect(system, &new_rect);
+		if (AV_OK == av_rect_substract(&old_rect, &new_rect, &inv_list))
+		{
+			system->invalidate_rects(system, inv_list);
+		}
 	}
 
 	return AV_OK;
+}
+
+static av_result_t av_visible_on_invalidate(struct av_window* _self, av_rect_p rect)
+{
+	av_visible_p self = (av_visible_p)_self;
+	return self->system->invalidate_rect(self->system, rect);
 }
 
 static void av_visible_set_surface(struct _av_visible_t* visible, av_surface_p surface)
@@ -70,8 +75,12 @@ static void av_visible_set_surface(struct _av_visible_t* visible, av_surface_p s
 	surface->get_size(surface, &rect.w, &rect.h);
 	window->set_rect(window, &rect);
 	self->surface = surface;
-	window->get_absolute_rect(window, &rect);
-	system->invalidate_rect(system, &rect);
+	if (system)
+	{ 
+		window->get_absolute_rect(window, &rect);
+		system->invalidate_rect(system, &rect);
+	}
+	self->is_owner_draw = AV_FALSE;
 }
 
 static av_result_t av_visible_draw(struct _av_visible_t* visible)
@@ -87,6 +96,14 @@ static av_result_t av_visible_draw(struct _av_visible_t* visible)
 	int sy = system->display->display_config.scale_y;
 
 	((av_window_p)self)->get_rect((av_window_p)self, &rect);
+
+	if (!self->surface)
+	{
+		system->display->create_surface(system->display, &self->surface);
+		if (AV_OK != (rc = self->surface->set_size(self->surface, rect.w * sx, rect.h * sy)))
+			return rc;
+	}
+
 	if (AV_OK != (rc = self->surface->lock(self->surface, &pixels, &pitch)))
 		return rc;
 
@@ -101,16 +118,44 @@ static av_result_t av_visible_draw(struct _av_visible_t* visible)
 	return AV_OK;
 }
 
-av_result_t  av_visible_create_child(struct _av_visible_t* _self, av_rect_p rect, on_draw_t on_draw, av_surface_p surface, struct _av_visible_t **pvisible)
+av_result_t av_visible_create_child(struct _av_visible_t* _self, const char* classname, struct _av_visible_t **pvisible)
 {
 	av_visible_p self = (av_visible_p)_self;
-	return av_system_create_visible((av_system_p)self->system, self, rect, on_draw, surface, pvisible);
+	av_oop_p oop = ((av_object_p)self)->classref->oop;
+	av_visible_p visible;
+	av_result_t rc;
+	
+	if (AV_OK != (rc = oop->new(oop, classname, (av_object_p*)&visible)))
+		return rc;
+
+	if ( !O_is_a(visible, "visible"))
+	{
+		O_destroy(visible);
+		return AV_EARG;
+	}
+
+	visible->system = self->system;
+	if (AV_OK != (rc = ((av_window_p)visible)->set_parent((av_window_p)visible, (av_window_p)self)))
+	{
+		O_destroy(visible);
+		return rc;
+	}
+	*pvisible = visible;
+	return AV_OK;
+}
+
+void av_visible_render(struct _av_visible_t* _self, av_rect_p src_rect, av_rect_p dst_rect)
+{
+	av_visible_p visible = (av_visible_p)_self;
+	if (visible->surface)
+		visible->surface->render(visible->surface, src_rect, dst_rect);
 }
 
 static void av_visible_destructor(struct _av_object_t* pvisible)
 {
 	av_visible_p self = (av_visible_p)pvisible;
-	if (self->surface)
+
+	if (self->surface && self->is_owner_draw)
 		O_destroy(self->surface);
 
 	if (self->on_destroy)
@@ -121,9 +166,12 @@ static av_result_t av_visible_constructor(av_object_p object)
 {
 	av_visible_p self = (av_visible_p)object;
 	((av_window_p)object)->set_rect = av_visible_set_rect;
+	((av_window_p)object)->on_invalidate = av_visible_on_invalidate;
+	self->is_owner_draw = AV_TRUE;
 	self->draw = av_visible_draw;
 	self->set_surface = av_visible_set_surface;
 	self->create_child = av_visible_create_child;
+	self->render = av_visible_render;
 	return AV_OK;
 }
 

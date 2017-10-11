@@ -37,20 +37,18 @@ typedef struct _av_visible_t
 	av_window_t window;
 
 	struct _av_system_t* system;
-
 	av_surface_p surface;
+	av_bool_t is_owner_draw;
 
-	av_result_t (*draw)(struct _av_visible_t* self);
-
-	void(*on_draw)(struct _av_visible_t* self, av_graphics_p graphics);
-	void(*on_destroy)(struct _av_visible_t* self);
-
-	void (*set_surface)(struct _av_visible_t* self, av_surface_p surface);
-
-	av_result_t(*create_child) (struct _av_visible_t* self, av_rect_p rect, on_draw_t on_draw, av_surface_p surface, struct _av_visible_t **pvisible);
+	av_result_t (*draw)   (struct _av_visible_t* self);
+	void (*render)        (struct _av_visible_t* self, av_rect_p src_rect, av_rect_p dst_rect);
+	void (*on_tick)       (struct _av_visible_t* self);
+	void (*on_draw)       (struct _av_visible_t* self, av_graphics_p graphics);
+	void (*on_destroy)    (struct _av_visible_t* self);
+	void (*set_surface)   (struct _av_visible_t* self, av_surface_p surface);
+	av_result_t           (*create_child) (struct _av_visible_t* self, const char* classname, struct _av_visible_t **pvisible);
 
 } av_visible_t, *av_visible_p;
-
 
 /*!
 * \brief Registers sprite class into OOP

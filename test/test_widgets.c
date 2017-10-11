@@ -5,7 +5,7 @@
 #endif
 
 #include <avgl.h>
-/*
+
 #define XRES 1024
 #define YRES 768
 
@@ -57,7 +57,7 @@ static av_bool_t on_mouse_button_down(av_window_p self, av_event_mouse_button_t 
 	{
 		mouse_x = x;
 		mouse_y = y;
-		avgl_capture_visible(self);
+		avgl_capture_visible((av_visible_p)self);
 		self->raise_top(self);
 		dragging = AV_TRUE;
 		is_position_change = AV_TRUE;
@@ -67,7 +67,7 @@ static av_bool_t on_mouse_button_down(av_window_p self, av_event_mouse_button_t 
 	{
 		mouse_x = x;
 		mouse_y = y;
-		avgl_capture_visible(self);
+		avgl_capture_visible((av_visible_p)self);
 		dragging = AV_TRUE;
 		is_position_change = AV_FALSE;
 		return AV_TRUE;
@@ -146,22 +146,29 @@ static av_bool_t on_mouse_move(av_window_p self, int x, int y)
 	return AV_FALSE;
 }
 
-av_window_p new_window(av_window_p parent, int x, int y, int w, int h)
+av_visible_p new_window(av_visible_p parent, int x, int y, int w, int h)
 {
+	av_visible_p child;
 	av_window_p window;
-	window = (av_window_p)avgl_create_visible(parent, x, y, w, h, on_draw);
+	av_rect_t rect;
+	parent->create_child(parent, "visible", &child);
+	child->on_draw = on_draw;
+	window = (av_window_p)child;
 	window->set_hover_delay(window, 0);
 	window->on_mouse_move        = on_mouse_move;
 	window->on_mouse_button_down = on_mouse_button_down;
 	window->on_mouse_button_up   = on_mouse_button_up;
 	window->on_mouse_enter       = on_mouse_enter;
 	window->on_mouse_hover       = on_mouse_hover;
-	return window;
+	av_rect_init(&rect, x, y, w, h);
+	window->set_rect(window, &rect);
+	child->draw(child);
+	return child;
 }
 
 int test_widgets()
 {
-	av_window_p window;
+	av_visible_p root_visible;
 	int i;
 	av_display_config_t dc;
 	dc.width = 20;
@@ -170,17 +177,16 @@ int test_widgets()
 	dc.scale_y = 40;
 	dc.mode = 0;
 
-	avgl_create(&dc);
-//	avgl_create(AV_NULL);
-	for (i=0; i<2; i++)
+	root_visible = avgl_create(&dc);
+	//root_visible = avgl_create(AV_NULL);
+	for (i=0; i<7; i++)
 	{
-		window = new_window(AV_NULL, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT);
-		window->set_clip_children(window, 1);
-		window = new_window(window, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT, AV_DEFAULT);
+		av_visible_p widget = new_window(root_visible, i * 2, i * 2, 4, 3);
+		((av_window_p)widget)->set_clip_children((av_window_p)widget, 1);
+		new_window(widget, 1, 1, 3, 2);
 	}
 
 	avgl_loop();
 	avgl_destroy();
 	return 1;
 }
-*/

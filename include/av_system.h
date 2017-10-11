@@ -82,6 +82,8 @@ typedef struct _av_system_t
 	*/
 	void (*set_capture)           (struct _av_system_t* self, av_window_p window);
 
+	av_result_t (*initialize)            (struct _av_system_t* self, av_display_config_p pdc);
+
 } av_system_t, *av_system_p;
 
 /*!

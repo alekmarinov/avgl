@@ -79,6 +79,19 @@ static void av_visible_root_on_destroy(struct _av_visible_t* self)
 	ctx->root = AV_NULL;
 }
 
+static void tick_recurse(av_visible_p visible)
+{
+	av_list_p children;
+	if (visible->on_tick)
+		visible->on_tick(visible);
+
+	children = ((av_window_p)visible)->get_children((av_window_p)visible);
+	for (children->first(children); children->has_more(children); children->next(children))
+	{
+		tick_recurse((av_visible_p)children->get(children));
+	}
+}
+
 static void render_recurse(av_system_p self, av_visible_p visible)
 {
 	av_window_p window = (av_window_p)visible;
@@ -98,19 +111,20 @@ static void render_recurse(av_system_p self, av_visible_p visible)
 		window->get_absolute_rect(window, &winrect);
 		if (av_rect_intersect(rect, &winrect, &irect))
 		{
-			av_dbg("inv = %d %d %d %d, x=%d, y=%d\n", irect.x, irect.y, irect.w, irect.h, winrect.x, winrect.y);
+			//av_dbg("inv = %d %d %d %d, x=%d, y=%d\n", irect.x, irect.y, irect.w, irect.h, winrect.x, winrect.y);
 			src_rect = irect;
 			src_rect.x -= winrect.x;
 			src_rect.y -= winrect.y;
 
 			av_rect_scale(&src_rect, (float)display_config.scale_x, (float)display_config.scale_y);
 			av_rect_scale(&irect, (float)display_config.scale_x, (float)display_config.scale_y);
-			av_dbg("render_scaled %p: %d %d %d %d -> %d %d %d %d\n",
+			/*av_dbg("render_scaled %p: %d %d %d %d -> %d %d %d %d\n",
 					visible->surface,
 					src_rect.x, src_rect.y, src_rect.w, src_rect.h,
 					irect.x, irect.y, irect.w, irect.h);
+					*/
 
-			visible->surface->render(visible->surface, &src_rect, &irect);
+			visible->render(visible, &src_rect, &irect);
 		}
 	}
 	children = window->get_children(window);
@@ -226,6 +240,8 @@ static av_bool_t av_system_step(av_system_p self)
 		}
 	}
 
+	tick_recurse(ctx->root);
+
 	if (!self->input->poll_event(self->input, &event))
 	{
 		self->timer->sleep_ms(10);
@@ -249,6 +265,7 @@ static av_bool_t av_system_step(av_system_p self)
 				{
 					av_event_type_t event_type = event.type;
 					av_window_p hovered = AV_NULL;
+
 					target = find_window_xy((av_window_p)ctx->root, event.mouse_x, event.mouse_y);
 					/*if (event.type == AV_EVENT_MOUSE_MOTION)*/
 					{
@@ -342,16 +359,18 @@ static av_bool_t av_system_step(av_system_p self)
 		}
 	}
 
-	//	av_event_dbg(&event);
+	// av_event_dbg(&event);
 
 	if (ctx->root)
 		render_recurse(self, ctx->root);
 
+/*
 	for (invrects->first(invrects); invrects->has_more(invrects); invrects->next(invrects))
 	{
 		av_rect_p rect = invrects->get(invrects);
 		av_dbg("invrect = %d %d %d %d\n", rect->x, rect->y, rect->w, rect->h);
 	}
+*/
 	invrects->remove_all(invrects, av_free);
 
 	self->display->render(self->display);
@@ -394,7 +413,16 @@ static void av_system_set_capture(struct _av_system_t* self, av_window_p window)
 static av_result_t av_system_invalidate_rect(struct _av_system_t* self, av_rect_p rect)
 {
 	system_ctx_p ctx = O_context(self);
-	return ctx->invalid_rects->push_last(ctx->invalid_rects, av_rect_clone(rect));
+	av_rect_t arect;
+	if (rect)
+		av_rect_copy(&arect, rect);
+	else
+	{
+		arect.x = arect.y = 0;
+		arect.w =self->display->display_config.width;
+		arect.h = self->display->display_config.height;
+	}
+	return ctx->invalid_rects->push_last(ctx->invalid_rects, av_rect_clone(&arect));
 }
 
 static av_result_t av_system_invalidate_rects(struct _av_system_t* self, av_list_p rects)
@@ -403,61 +431,56 @@ static av_result_t av_system_invalidate_rects(struct _av_system_t* self, av_list
 	return ctx->invalid_rects->push_all(ctx->invalid_rects, rects);
 }
 
-av_result_t av_system_create_visible(struct _av_system_t* system, av_visible_p parent, av_rect_p rect, on_draw_t on_draw, av_surface_p surface, struct _av_visible_t **pvisible)
+static av_result_t av_system_initialize(struct _av_system_t* _self, av_display_config_p pdc)
 {
-	av_oop_p oop = ((av_object_p)system)->classref->oop;
-	av_rect_t arect;
-	av_visible_p visible;
 	av_result_t rc;
+	av_oop_p oop;
+	av_rect_t root_rect;
+	av_system_p self = (av_system_p)_self;
+	system_ctx_p ctx = O_context(self);
 
-	if (AV_OK != (rc = oop->new(oop, "visible", (av_object_p*)&visible)))
+	/* create display */
+	if (AV_OK != (rc = self->display->set_configuration(self->display, pdc)))
 		return rc;
 
-	visible->on_draw = on_draw;
-	visible->system = (struct _av_system_t*)system;
-	if (!parent)
-		parent = system->get_root_visible(system);
-	if (AV_OK != (rc = ((av_window_p)visible)->set_parent((av_window_p)visible, (av_window_p)parent)))
+	/* create root visible */
+	root_rect.x = 0;
+	root_rect.y = 0;
+	root_rect.w = pdc->width;
+	root_rect.h = pdc->height;
+
+	oop = ((av_object_p)self)->classref->oop;
+	if (AV_OK != (rc = oop->new(oop, "visible", (av_object_p*)&ctx->root)))
+		return rc;
+	ctx->root->system = self;
+	ctx->root->on_draw = av_visible_root_on_draw;
+	ctx->root->on_destroy = av_visible_root_on_destroy;
+	if (AV_OK != (rc = self->display->create_surface(self->display, &ctx->root->surface)))
 	{
-		O_destroy(visible);
+		O_destroy(ctx->root);
 		return rc;
 	}
 
-	av_rect_copy(&arect, rect);
-
-	if (surface)
+	if (AV_OK != (rc = ((av_window_p)ctx->root)->set_rect((av_window_p)ctx->root, &root_rect)))
 	{
-		surface->get_size(surface, &arect.w, &arect.h);
+		O_destroy(ctx->root);
+		return rc;
 	}
-	else
-	{
-		if (AV_OK != (rc = system->display->create_surface(system->display, &visible->surface)))
-		{
-			O_destroy(visible);
-			return rc;
-		}
-	}
-	((av_window_p)visible)->set_rect((av_window_p)visible, &arect);
-	if (surface)
-		visible->surface = surface;
-
-	*pvisible = visible;
 	return AV_OK;
 }
-
 
 static void av_system_destructor(void* psystem)
 {
 	av_system_p self = (av_system_p)psystem;
 	system_ctx_p ctx = O_context(self);
 
+	if (ctx->root)
+		O_destroy(ctx->root);
+
 	ctx->invalid_rects->remove_all(ctx->invalid_rects, av_free);
 	ctx->invalid_rects->destroy(ctx->invalid_rects);
 	ctx->hover_windows->remove_all(ctx->hover_windows, av_free);
 	ctx->hover_windows->destroy(ctx->hover_windows);
-
-	if (ctx->root)
-		O_destroy(ctx->root);
 
 	if (self->audio) O_release(self->audio);
 	if (self->timer) O_release(self->timer);
@@ -473,7 +496,6 @@ static av_result_t av_system_constructor(av_object_p object)
 	av_oop_p oop;
 	system_ctx_p ctx;
 	av_system_p self        = (av_system_p)object;
-	av_rect_t root_rect;
 
 	ctx = (system_ctx_p)av_calloc(1, sizeof(system_ctx_t));
 	if (!ctx) return AV_EMEM;
@@ -509,15 +531,7 @@ static av_result_t av_system_constructor(av_object_p object)
 	self->set_capture       = av_system_set_capture;
 	self->invalidate_rect   = av_system_invalidate_rect;
 	self->invalidate_rects  = av_system_invalidate_rects;
-
-	/* create root visible */
-	root_rect.x = 0;
-	root_rect.y = 0;
-	root_rect.w = self->display->display_config.width;
-	root_rect.h = self->display->display_config.height;
-	if (AV_OK != (rc = av_system_create_visible(self, AV_NULL, &root_rect, av_visible_root_on_draw, AV_NULL, &ctx->root)))
-		return rc;
-	ctx->root->on_destroy = av_visible_root_on_destroy;
+	self->initialize        = av_system_initialize;
 
 	return AV_OK;
 }

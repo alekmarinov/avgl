@@ -74,7 +74,6 @@ static av_result_t av_timer_sdl_add_timer(av_timer_p self,
 
 	tinfo->timer                 = self;
 	tinfo->delay_ms              = delay_ms;
-	tinfo->delay_ms              = delay_ms;
 	tinfo->arg                   = arg;
 	tinfo->timer_callback        = callback;
 	tinfo->sdl_timer_id          = SDL_AddTimer(delay_ms, av_timer_sdl_callback, (void*)tinfo);

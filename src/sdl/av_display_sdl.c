@@ -63,7 +63,6 @@ static av_result_t av_display_sdl_enum_display_modes(av_display_p pdisplay, disp
 */
 static av_result_t av_display_sdl_set_configuration(av_display_p pdisplay, av_display_config_p new_display_config)
 {
-	av_result_t rc;
 	av_display_sdl_p self = (av_display_sdl_p)pdisplay;
 	Uint32 sdlflags = 0;//  SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
 
@@ -81,12 +80,10 @@ static av_result_t av_display_sdl_set_configuration(av_display_p pdisplay, av_di
 
 	if (!self->window)
 	{
-		//extern DECLSPEC int SDLCALL SDL_CreateWindowAndRenderer(int width, int height, Uint32 window_flags,SDL_Window **window, SDL_Renderer **renderer);
-
 		if (0 > SDL_CreateWindowAndRenderer(pdisplay->display_config.scale_x * pdisplay->display_config.width, pdisplay->display_config.scale_y * pdisplay->display_config.height, sdlflags, &self->window, &self->renderer))
 		{
-			// FIXME: provide logging
-			printf("%s\n", SDL_GetError());
+			/* FIXME: extract error reason */
+			return AV_EGENERAL;
 		}
 	}
 

@@ -5,6 +5,8 @@
 int test_oop_inheritance();
 int test_avgl_create_destroy();
 int test_window_absolute();
-int test_bitmap_load();
+int test_surface();
+int test_visible();
+int test_sprite();
 
 #endif /* __TEST_H */

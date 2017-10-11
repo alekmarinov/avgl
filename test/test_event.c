@@ -1,7 +1,6 @@
 #include <avgl.h>
 #include <stdio.h>
 
-/*
 static av_bool_t parent_move = AV_FALSE;
 static av_bool_t child_move = AV_FALSE;
 static av_bool_t child_move_bubble = AV_FALSE;
@@ -53,13 +52,22 @@ int test_event_mouse()
 	av_window_p parent;
 	av_window_p child1;
 	av_window_p child2;
-	avgl_create(AV_NULL);
+	av_visible_p root = avgl_create(AV_NULL);
+	av_rect_t rect;
 
-	parent = (av_window_p)avgl_create_visible(AV_NULL, 10, 10, 5, 5, AV_NULL);
+	root->create_child(root, "visible", (av_visible_p*)&parent);
+	av_rect_init(&rect, 10, 10, 5, 5);
+	parent->set_rect(parent, &rect);
 	parent->on_mouse_move = on_mouse_move_parent;
-	child1 = (av_window_p)avgl_create_visible(parent, 1, 1, 2, 2, AV_NULL);
+
+	((av_visible_p)parent)->create_child((av_visible_p)parent, "visible", (av_visible_p*)&child1);
+	av_rect_init(&rect, 1, 1, 2, 2);
+	child1->set_rect(child1, &rect);
 	child1->on_mouse_move = on_mouse_move_child;
-	child2 = (av_window_p)avgl_create_visible(parent, 3, 3, 2, 2, AV_NULL);
+
+	((av_visible_p)parent)->create_child((av_visible_p)parent, "visible", (av_visible_p*)&child2);
+	av_rect_init(&rect, 3, 3, 2, 2);
+	child2->set_rect(child1, &rect);
 	child2->on_mouse_move = on_mouse_move_child_bubble;
 
 	// assert no event
@@ -92,4 +100,3 @@ int test_event_mouse()
 	avgl_destroy();
 	return 1;
 }
-*/

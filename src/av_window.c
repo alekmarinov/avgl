@@ -158,7 +158,7 @@ static void av_window_set_visible(av_window_p self, av_bool_t visible)
 	{
 		av_rect_t rect;
 		self->get_absolute_rect(self, &rect);
-		if (rect.w && rect.h)
+		if (self->on_invalidate && rect.w && rect.h)
 			self->on_invalidate(self, &rect);
 	}
 }
@@ -222,7 +222,7 @@ static av_result_t av_window_raise_lower(av_window_p self, av_bool_t israise)
 		{
 			av_rect_t rect;
 			self->get_absolute_rect(self, &rect);
-			if (rect.w && rect.h)
+			if (self->on_invalidate && rect.w && rect.h)
 				self->on_invalidate(self, &rect);
 		}
 
@@ -264,7 +264,8 @@ static void av_window_destructor(struct _av_object_t* pobject)
 	av_rect_t rect;
 	av_assert(ctx && ctx->children, "window is not properly initialized");
 	self->get_absolute_rect(self, &rect);
-	self->on_invalidate(self, &rect);
+	if (self->on_invalidate)
+		self->on_invalidate(self, &rect);
 	children = ctx->children;
 	self->detach(self);
 	while (children->size(children) > 0)
@@ -388,14 +389,20 @@ av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 	{
 		/* set newrect to the root window */
 		av_rect_copy(&ctx->rect, newrect);
-		self->get_absolute_rect(self, &invrect);
-		self->on_invalidate(self, &invrect);
+		if (self->on_invalidate)
+		{
+			self->get_absolute_rect(self, &invrect);
+			self->on_invalidate(self, &invrect);
+		}
 		return AV_OK;
 	}
 
 	/* invalidate old window rect */
-	self->get_absolute_rect(self, &invrect);
-	self->on_invalidate(self, &invrect);
+	if (self->on_invalidate)
+	{
+		self->get_absolute_rect(self, &invrect);
+		self->on_invalidate(self, &invrect);
+	}
 
 	/* if children not clipped, change their positions */
 	if (AV_FALSE == self->are_children_clipped(self))
@@ -414,7 +421,7 @@ av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect)
 
 	/* invalidate new window rect */
 	av_rect_copy(&ctx->rect, newrect);
-	if (oldrect.w != newrect->w || oldrect.h != newrect->h)
+	if (self->on_invalidate && (oldrect.w != newrect->w || oldrect.h != newrect->h))
 	{
 		self->get_absolute_rect(self, &invrect);
 		self->on_invalidate(self, &invrect);
@@ -556,6 +563,14 @@ static av_bool_t av_window_on_invalidate(av_window_p self, av_rect_p rect)
 	return AV_FALSE;
 }
 
+static void av_window_invalidate(av_window_p self)
+{
+	av_rect_t rect;
+	self->get_absolute_rect(self, &rect);
+	if (self->on_invalidate)
+		self->on_invalidate(self, &rect);
+}
+
 static av_bool_t av_window_on_event(av_window_p self, av_event_p event)
 {
 	switch (event->type)
@@ -666,6 +681,7 @@ static av_result_t av_window_constructor(av_object_p object)
 	self->on_user              = av_window_on_user;
 	self->on_paint             = av_window_on_paint;
 	self->on_invalidate        = av_window_on_invalidate;
+	self->invalidate = av_window_invalidate;
 
 	return AV_OK;
 }

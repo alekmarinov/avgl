@@ -37,6 +37,8 @@
 #include <av_display.h>
 #include <av_window.h>
 #include <av_bitmap.h>
+#include <av_visible.h>
+#include <av_sprite.h>
 #include <av_stdc.h>
 
 typedef void (*on_paint_t)(av_visible_p visible, av_graphics_p graphics);

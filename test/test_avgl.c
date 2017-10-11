@@ -23,17 +23,25 @@ void create_visible(av_visible_p parent, int x, int y)
 {
 	av_rect_t rect;
 	av_visible_p visible;
-	av_rect_init(&rect, x, y, 30, 16);
-	parent->create_child(parent, &rect, AV_NULL, AV_NULL, &visible);
+	av_rect_init(&rect, x, y, 10, 5);
+	parent->create_child(parent, "visible", &visible);
+	visible->on_draw = on_draw;
 	av_window_p window = (av_window_p)visible;
+	window->set_rect(window, &rect);
+	visible->draw(visible);
 	window->on_mouse_button_down = on_mouse_button_down;
 }
 
 int test_avgl_create_destroy()
 {
-	av_visible_p main_visible = avgl_create(AV_NULL);
-	for (int i = 0; i < 10; i++)
-		create_visible(main_visible, 5 * i, 5 * i);
+	av_display_config_t dc;
+	dc.width = 30;
+	dc.height = 25;
+	dc.scale_x = 25;
+	dc.scale_y = 20;
+	dc.mode = 0;
+	av_visible_p main_visible = avgl_create(&dc);
+	for (int i = 0; i < 10; i++) create_visible(main_visible, 2 * i, 2 * i);
 	avgl_loop();
 	avgl_destroy();
 

@@ -390,6 +390,12 @@ typedef struct av_window
 	*/
 	void (*on_invalidate)             (struct av_window* self, av_rect_p rect);
 
+	/*!
+	* \brief Invalidate this window area
+	* \param self is a reference to this object
+	*/
+	void (*invalidate)                (struct av_window* self);
+
 } av_window_t, *av_window_p;
 
 /*!
