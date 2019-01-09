@@ -1,3 +1,3 @@
 # AVGL
 
-Small customizable library for 2D graphics apps development.
+Small customizable library for 2D graphics development.
