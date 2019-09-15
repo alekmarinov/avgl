@@ -29,8 +29,8 @@ av_bool_t sprite_timer(void* arg)
 }
 
 
-int girl_dx = 40;
-int girl_dy = 40;
+int girl_dx = 4;
+int girl_dy = 4;
 av_bool_t girl_move_timer(void* arg)
 {
 	av_rect_t rect;
@@ -82,9 +82,9 @@ int test_sprite()
 	rect.h = girl_height;
 	((av_window_p)sprite)->set_rect((av_window_p)sprite, &rect);
 	sprite->set_sequence(sprite, seq_girl, 6, 700, AV_TRUE);
-	system->timer->add_timer(system->timer, girl_move_timer, 200, sprite, AV_NULL);
+	system->timer->add_timer(system->timer, girl_move_timer, 20, sprite, AV_NULL);
 
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 50; i++)
 	{
 		rect.x = (int)((float)1000 * RAND);
 		rect.y = (int)((float)1000 * RAND);

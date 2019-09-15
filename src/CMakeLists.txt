@@ -53,9 +53,11 @@ set(sources
     # av_scripting.c
     # av_sound.c
     # av_sound_wave.c
+    av_sprite.c
     av_surface.c
     av_system.c
     av_timer.c
+    av_visible.c
     av_window.c
     ${core_sources}
     ${cairo_sources}
@@ -69,9 +71,11 @@ target_include_directories(avgl
     PRIVATE ${CAIRO_INCLUDE_DIRS}
     PRIVATE ${SDL2_INCLUDE_DIRS}
 )
+
 target_link_libraries (avgl
     PUBLIC m
     PUBLIC ${CMAKE_THREAD_LIBS_INIT}
     PUBLIC ${CAIRO_LIBRARIES}    
-    PUBLIC ${SDL2_LIBRARIES}    
+    PUBLIC ${SDL2_LIBRARIES}
+    PUBLIC ${SDL2IMAGE_LIBRARIES}
 )

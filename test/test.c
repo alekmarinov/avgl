@@ -10,13 +10,13 @@
 
 main()
 {
-//	TEST(test_oop_inheritance)
-//	TEST(test_avgl_create_destroy)
-//	TEST(test_window_absolute)
-//	TEST(test_event_mouse)
-//	TEST(test_widgets)
-//	TEST(test_surface)
-//	TEST(test_visible)
+	// TEST(test_oop_inheritance)
+	// TEST(test_avgl_create_destroy)
+	// TEST(test_window_absolute)
+	// TEST(test_event_mouse)
+	// TEST(test_widgets)
+	// TEST(test_surface)
+	// TEST(test_visible)
 	TEST(test_sprite)
 
 #ifdef _MSC_VER
