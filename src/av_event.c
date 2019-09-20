@@ -13,7 +13,6 @@
 */
 
 #include <av_event.h>
-#include <av_debug.h>
 
 void av_event_init_keyboard(av_event_p event, av_key_t key, av_event_button_status_t button_status)
 {

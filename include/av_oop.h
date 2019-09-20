@@ -136,7 +136,7 @@ typedef struct _av_class_t
 } av_class_t, *av_class_p;
 
 /*!
-* \brief The super class of all avgl classes
+* \brief The super class
 */
 typedef struct _av_object_t
 {
@@ -149,6 +149,11 @@ typedef struct _av_object_t
 	* Holds object attributes
 	*/
 	av_hash_p attributes;
+
+	/*!
+	* Reference counter
+	*/
+	unsigned int refcnt;
 
 	/*!
     * \brief Tells if this object is instance of or derived from a specified class
@@ -198,6 +203,18 @@ typedef struct _av_object_t
 	*/
 	void (*destroy)(void* self);
 
+	/*!
+	* \brief Increment reference counter
+	* \param self is a reference to this object
+	*/
+	struct _av_object_t* (*addref)(struct _av_object_t* self);
+
+	/*!
+	* \brief Decrement reference counter and destroy the object when reaches 0
+	* \param self is a reference to this object
+	*/
+	void(*release)(struct _av_object_t* self);
+
 } av_object_t, *av_object_p;
 
 /*! A shortcut to \c context field of an object */
@@ -213,8 +230,11 @@ typedef struct _av_object_t
 /*! A shortcut to \c destroy method of an object */
 #define O_destroy(o)         { ((av_object_p)(o))->destroy((av_object_p)(o)); o = AV_NULL; }
 
-/*! A shortcut to \c release method of a service */
-#define O_release(o)         { ((av_service_p)(o))->release((av_service_p)(o)); }
+/*! A shortcut to \c release method of an object */
+#define O_addref(o)         ((av_object_p)(o))->addref((av_object_p)(o))
+
+/*! A shortcut to \c release method of an object */
+#define O_release(o)         { ((av_object_p)(o))->release((av_object_p)(o)); }
 
 /*! Refers oop from object */
 #define O_oop(o)             ((av_object_p)o)->classref->oop
@@ -232,21 +252,6 @@ typedef struct av_service
 
 	/*! Service name */
 	char name[MAX_NAME_SIZE];
-
-	/*! Reference counter */
-	unsigned int refcnt;
-
-	/*!
-	* \brief Increment reference counter
-	* \param self is a reference to this object
-	*/
-	void (*addref)(struct av_service* self);
-
-	/*!
-	* \brief Decrement reference counter and destroy the object when reaches 0
-	* \param self is a reference to this object
-	*/
-	void (*release)(struct av_service* self);
 
 } av_service_t, *av_service_p;
 
@@ -323,7 +328,7 @@ typedef struct _av_oop_t {
 	*         - AV_OK on success
 	*         - AV_EFOUND if service named \c servicename is not registered
 	*/
-	av_result_t (*service_ref)(struct _av_oop_t* self, 
+	av_result_t (*get_service)(struct _av_oop_t* self, 
 		const char* servicename,
 		av_service_p* ppservice);
 } av_oop_t, *av_oop_p;

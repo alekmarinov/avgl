@@ -15,7 +15,6 @@
 #include "av_surface_sdl.h"
 #include "av_core_sdl.h"
 #include "av_bitmap_sdl.h"
-#include "av_debug.h"
 #include <SDL.h>
 
 /* set surface width and height */
@@ -75,7 +74,7 @@ static av_result_t av_surface_sdl_render(av_surface_p self, av_rect_p src_rect, 
 static void av_surface_sdl_destructor(av_object_p object)
 {
 	surface_sdl_ctx_p ctx = O_surface_context(object);
-	free(ctx);
+	av_free(ctx);
 }
 
 static av_result_t av_surface_sdl_set_bitmap(av_surface_p self, av_bitmap_p bitmap)

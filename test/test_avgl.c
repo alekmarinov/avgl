@@ -41,7 +41,8 @@ int test_avgl_create_destroy()
 	dc.scale_y = 20;
 	dc.mode = 0;
 	av_visible_p main_visible = avgl_create(&dc);
-	for (int i = 0; i < 10; i++) create_visible(main_visible, 2 * i, 2 * i);
+	for (int i = 0; i < 10; i++)
+		create_visible(main_visible, 2 * i, 2 * i);
 	avgl_loop();
 	avgl_destroy();
 

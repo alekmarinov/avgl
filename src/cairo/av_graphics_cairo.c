@@ -18,25 +18,21 @@
 #include <av_log.h>
 #include <cairo.h>
 #include <cairo-features.h>
+#include "av_graphics_cairo.h"
 #include "av_graphics_surface_cairo.h"
 
-#define MAKE_VERSION_NUM(x,y,z) (z + (y << 8) + (x << 16))
-#define CAIRO_VERSION_NUM MAKE_VERSION_NUM(CAIRO_VERSION_MAJOR, CAIRO_VERSION_MINOR, CAIRO_VERSION_MICRO)
-#define CAIRO_NEWER(x,y,z) (MAKE_VERSION_NUM(x,y,z) <= CAIRO_VERSION_NUM)
-#define CAIRO_OLDER(x,y,z) (MAKE_VERSION_NUM(x,y,z) > CAIRO_VERSION_NUM)
-
 #define CONTEXT "graphics_cairo_ctx"
-#define O_context(o) O_attr(o, CONTEXT)
-#define O_context_surface(o) O_attr(o, CONTEXT_GRAPHICS_SURFACE)
-#define O_context_pattern(o) O_attr(o, CONTEXT_GRAPHICS_PATTERN)
+#define O_context(o)            O_attr(o, CONTEXT)
+#define O_context_surface(o)    O_attr(o, CONTEXT_GRAPHICS_SURFACE)
+#define O_context_pattern(o)    O_attr(o, CONTEXT_GRAPHICS_PATTERN)
 
-#define PITAGOR(x, y) sqrt((x)*(x) + (y)*(y))
-#define SCALE_X(g, x) (x)*(((av_graphics_p)(g))->scale_x)
-#define SCALE_Y(g, y) (y)*(((av_graphics_p)(g))->scale_y)
-#define SCALE_R(g, r) (r)*(PITAGOR(((av_graphics_p)(g))->scale_x, ((av_graphics_p)(g))->scale_y))
-#define UNSCALE_X(g, x) (x)/(((av_graphics_p)(g))->scale_x)
-#define UNSCALE_Y(g, y) (y)/(((av_graphics_p)(g))->scale_y)
-#define UNSCALE_R(g, r) (r)/(PITAGOR(((av_graphics_p)(g))->scale_x, ((av_graphics_p)(g))->scale_y))
+#define PITAGOR(x, y)           sqrt((x)*(x) + (y)*(y))
+#define SCALE_X(g, x)           (x)*(((av_graphics_p)(g))->scale_x)
+#define SCALE_Y(g, y)           (y)*(((av_graphics_p)(g))->scale_y)
+#define SCALE_R(g, r)           (r)*(PITAGOR(((av_graphics_p)(g))->scale_x, ((av_graphics_p)(g))->scale_y))
+#define UNSCALE_X(g, x)         (x)/(((av_graphics_p)(g))->scale_x)
+#define UNSCALE_Y(g, y)         (y)/(((av_graphics_p)(g))->scale_y)
+#define UNSCALE_R(g, r)         (r)/(PITAGOR(((av_graphics_p)(g))->scale_x, ((av_graphics_p)(g))->scale_y))
 /*
 #define SCALE_X(g, x) (x)
 #define SCALE_Y(g, y) (y)
@@ -61,7 +57,7 @@ static const char* _err_surface_finished = "target surface has been finished";
 static const char* _err_surface          = "the surface type is not appropriate for the operation";
 static const char* _err_pattern          = "the pattern type is not appropriate for the operation";
 
-static av_result_t av_cairo_error_process(int rc, const char* funcname, const char* srcfilename, int linenumber)
+av_result_t av_cairo_error_process(int rc, const char* funcname, const char* srcfilename, int linenumber)
 {
 	av_result_t averr = AV_OK;
 	if (rc != CAIRO_STATUS_SUCCESS)
@@ -111,8 +107,6 @@ static av_result_t av_cairo_error_process(int rc, const char* funcname, const ch
 	return averr;
 }
 
-#define av_cairo_error_check(funcname, rc) av_cairo_error_process(rc, funcname, __FILE__, __LINE__)
-
 /* Create cairo graphics surface */
 static av_result_t av_graphics_cairo_create_surface(av_graphics_p self,
 													int width, int height,
@@ -127,10 +121,10 @@ static av_result_t av_graphics_cairo_create_surface(av_graphics_p self,
 	}
 
 	/* set_size could expect a reference to the graphics owner object */
-	surface->graphics = self;
+	surface->graphics = (av_graphics_p)O_addref(self);
 	if (AV_OK != (rc = ((av_surface_p)surface)->set_size((av_surface_p)surface, width, height)))
 	{
-		O_destroy(surface);
+		O_release(surface);
 		return rc;
 	}
 	*ppsurface = surface;
@@ -160,7 +154,7 @@ static av_result_t av_graphics_cairo_create_surface_from_data(av_graphics_p self
 	}
 
 	O_set_attr(surface, CONTEXT_GRAPHICS_SURFACE, image);
-	surface->graphics = self;
+	surface->graphics = (av_graphics_p)O_addref(self);
 	*ppsurface = surface;
 	return AV_OK;
 }
@@ -187,21 +181,9 @@ static av_result_t av_graphics_cairo_create_surface_from_file(av_graphics_p self
 
 	O_set_attr(surface, CONTEXT_GRAPHICS_SURFACE, image);
 
-	surface->graphics = self;
+	surface->graphics = (av_graphics_p)O_addref(self);
 	*ppsurface = surface;
 	return AV_OK;
-}
-
-/* Writes surface to file */
-static av_result_t av_graphics_cairo_save_surface_file(av_graphics_p self,
-													   av_graphics_surface_p surface,
-													   const char* filename)
-{
-	cairo_surface_t* image = (cairo_surface_t*)O_context_surface(surface);
-	AV_UNUSED(self);
-
-	/* FIXME: Detect file format */
-	return av_cairo_error_check("cairo_surface_write_to_png", cairo_surface_write_to_png(image, filename));
 }
 
 /*
@@ -223,7 +205,7 @@ static av_result_t av_graphics_cairo_begin(av_graphics_p self, av_graphics_surfa
 
 	O_set_attr(self, CONTEXT, cairo);
 
-	self->graphics_surface = surface;
+	self->graphics_surface = (av_graphics_surface_p)O_addref(surface);
 	return AV_OK;
 }
 
@@ -243,6 +225,7 @@ static void av_graphics_cairo_end(av_graphics_p self)
 	av_assert(cairo, "calling `end' method before `begin'");
 	cairo_destroy(cairo);
 	O_set_attr(self, CONTEXT, 0);
+	O_release(self->graphics_surface);
 	self->graphics_surface = AV_NULL;
 }
 
@@ -284,7 +267,7 @@ static av_result_t av_graphics_cairo_pop_group(av_graphics_p self,
 
 	if (AV_OK != (rc = av_cairo_error_check("cairo_pop_group", cairo_pattern_status(p))))
 	{
-		O_destroy(pattern);
+		O_release(pattern);
 		pattern = AV_NULL;
 	}
 	*ppattern = pattern;
@@ -393,10 +376,10 @@ static av_result_t av_graphics_pattern_cairo_set_extend(av_graphics_pattern_p se
 	cairo_pattern_t* pattern = O_context_pattern(self);
 	switch (extend)
 	{
-    	case AV_EXTEND_NONE: cairo_extend = CAIRO_EXTEND_NONE; break;
-    	case AV_EXTEND_REPEAT: cairo_extend = CAIRO_EXTEND_REPEAT; break;
+    	case AV_EXTEND_NONE:    cairo_extend = CAIRO_EXTEND_NONE; break;
+    	case AV_EXTEND_REPEAT:  cairo_extend = CAIRO_EXTEND_REPEAT; break;
     	case AV_EXTEND_REFLECT: cairo_extend = CAIRO_EXTEND_REFLECT; break;
-    	case AV_EXTEND_PAD: cairo_extend = CAIRO_EXTEND_PAD; break;
+    	case AV_EXTEND_PAD:     cairo_extend = CAIRO_EXTEND_PAD; break;
 		default: return AV_EARG;
 	}
 	cairo_pattern_set_extend(pattern, cairo_extend);
@@ -410,10 +393,10 @@ static av_result_t av_graphics_pattern_cairo_set_filter(av_graphics_pattern_p se
 	cairo_pattern_t* pattern = O_context_pattern(self);
 	switch (filter)
 	{
-    	case AV_FILTER_FAST: cairo_filter = CAIRO_FILTER_FAST; break;
-    	case AV_FILTER_GOOD: cairo_filter = CAIRO_FILTER_GOOD; break;
-    	case AV_FILTER_BEST: cairo_filter = CAIRO_FILTER_BEST; break;
-    	case AV_FILTER_NEAREST: cairo_filter = CAIRO_FILTER_NEAREST; break;
+    	case AV_FILTER_FAST:     cairo_filter = CAIRO_FILTER_FAST; break;
+    	case AV_FILTER_GOOD:     cairo_filter = CAIRO_FILTER_GOOD; break;
+    	case AV_FILTER_BEST:     cairo_filter = CAIRO_FILTER_BEST; break;
+    	case AV_FILTER_NEAREST:  cairo_filter = CAIRO_FILTER_NEAREST; break;
     	case AV_FILTER_BILINEAR: cairo_filter = CAIRO_FILTER_BILINEAR; break;
     	case AV_FILTER_GAUSSIAN: cairo_filter = CAIRO_FILTER_GAUSSIAN; break;
 		default: return AV_EARG;
@@ -915,10 +898,10 @@ static av_result_t av_graphics_cairo_get_text_extents(av_graphics_p self,
 	return av_cairo_error_check("cairo_text_extents", rc);
 }
 
-static av_result_t av_graphics_cairo_select_font_face(av_graphics_p self,
-													  const char* fontface,
-													  av_font_slant_t slant,
-													  av_font_weight_t weight)
+static av_result_t av_graphics_cairo_set_font_face(av_graphics_p self,
+												   const char* fontface,
+												   av_font_slant_t slant,
+												   av_font_weight_t weight)
 {
 	cairo_t* cairo = O_context(self);
 	cairo_font_slant_t cslant;
@@ -980,50 +963,49 @@ static av_result_t av_graphics_cairo_constructor(av_object_p object)
 	self->graphics_surface    = AV_NULL;
 
 	/* override abstract methods */
-	self->create_surface      = av_graphics_cairo_create_surface;
+	self->create_surface           = av_graphics_cairo_create_surface;
 	self->create_surface_from_data = av_graphics_cairo_create_surface_from_data;
 	self->create_surface_from_file = av_graphics_cairo_create_surface_from_file;
-	self->save_surface_file   = av_graphics_cairo_save_surface_file;
-	self->begin               = av_graphics_cairo_begin;
-	self->get_target_surface  = av_graphics_cairo_get_target_surface;
-	self->end                 = av_graphics_cairo_end;
-	self->push_group          = av_graphics_cairo_push_group;
-	self->pop_group           = av_graphics_cairo_pop_group;
-	self->create_pattern_rgba = av_graphics_cairo_create_pattern_rgba;
-	self->create_pattern_linear = av_graphics_cairo_create_pattern_linear;
-	self->create_pattern_radial = av_graphics_cairo_create_pattern_radial;
-	self->set_pattern         = av_graphics_cairo_set_pattern;
-	self->set_clip            = av_graphics_cairo_set_clip;
-	self->get_clip            = av_graphics_cairo_get_clip;
-	self->save                = av_graphics_cairo_save;
-	self->restore             = av_graphics_cairo_restore;
-	self->move_to             = av_graphics_cairo_move_to;
-	self->rel_move_to         = av_graphics_cairo_rel_move_to;
-	self->line_to             = av_graphics_cairo_line_to;
-	self->rel_line_to         = av_graphics_cairo_rel_line_to;
-	self->curve_to            = av_graphics_cairo_curve_to;
-	self->rel_curve_to        = av_graphics_cairo_rel_curve_to;
-	self->arc                 = av_graphics_cairo_arc;
-	self->arc_negative        = av_graphics_cairo_arc_negative;
-	self->close_path          = av_graphics_cairo_close_path;
-	self->rectangle           = av_graphics_cairo_rectangle;
-	self->set_line_width      = av_graphics_cairo_set_line_width;
-	self->set_line_cap        = av_graphics_cairo_set_line_cap;
-	self->set_line_join       = av_graphics_cairo_set_line_join;
-	self->stroke              = av_graphics_cairo_stroke;
-	self->fill                = av_graphics_cairo_fill;
-	self->paint               = av_graphics_cairo_paint;
-	self->flush               = av_graphics_cairo_flush;
-	self->set_offset          = av_graphics_cairo_set_offset;
-	self->get_offset          = av_graphics_cairo_get_offset;
-	self->set_scale           = av_graphics_cairo_set_scale;
-	self->set_color_rgba      = av_graphics_cairo_set_color_rgba;
-	self->show_text           = av_graphics_cairo_show_text;
-	self->text_path           = av_graphics_cairo_text_path;
-	self->show_image          = av_graphics_cairo_show_image;
-	self->get_text_extents    = av_graphics_cairo_get_text_extents;
-	self->select_font_face    = av_graphics_cairo_select_font_face;
-	self->set_font_size       = av_graphics_cairo_set_font_size;
+	self->begin                    = av_graphics_cairo_begin;
+	self->get_target_surface       = av_graphics_cairo_get_target_surface;
+	self->end                      = av_graphics_cairo_end;
+	self->push_group               = av_graphics_cairo_push_group;
+	self->pop_group                = av_graphics_cairo_pop_group;
+	self->create_pattern_rgba      = av_graphics_cairo_create_pattern_rgba;
+	self->create_pattern_linear    = av_graphics_cairo_create_pattern_linear;
+	self->create_pattern_radial    = av_graphics_cairo_create_pattern_radial;
+	self->set_pattern              = av_graphics_cairo_set_pattern;
+	self->set_clip                 = av_graphics_cairo_set_clip;
+	self->get_clip                 = av_graphics_cairo_get_clip;
+	self->save                     = av_graphics_cairo_save;
+	self->restore                  = av_graphics_cairo_restore;
+	self->move_to                  = av_graphics_cairo_move_to;
+	self->rel_move_to              = av_graphics_cairo_rel_move_to;
+	self->line_to                  = av_graphics_cairo_line_to;
+	self->rel_line_to              = av_graphics_cairo_rel_line_to;
+	self->curve_to                 = av_graphics_cairo_curve_to;
+	self->rel_curve_to             = av_graphics_cairo_rel_curve_to;
+	self->arc                      = av_graphics_cairo_arc;
+	self->arc_negative             = av_graphics_cairo_arc_negative;
+	self->close_path               = av_graphics_cairo_close_path;
+	self->rectangle                = av_graphics_cairo_rectangle;
+	self->set_line_width           = av_graphics_cairo_set_line_width;
+	self->set_line_cap             = av_graphics_cairo_set_line_cap;
+	self->set_line_join            = av_graphics_cairo_set_line_join;
+	self->stroke                   = av_graphics_cairo_stroke;
+	self->fill                     = av_graphics_cairo_fill;
+	self->paint                    = av_graphics_cairo_paint;
+	self->flush                    = av_graphics_cairo_flush;
+	self->set_offset               = av_graphics_cairo_set_offset;
+	self->get_offset               = av_graphics_cairo_get_offset;
+	self->set_scale                = av_graphics_cairo_set_scale;
+	self->set_color_rgba           = av_graphics_cairo_set_color_rgba;
+	self->show_text                = av_graphics_cairo_show_text;
+	self->text_path                = av_graphics_cairo_text_path;
+	self->show_image               = av_graphics_cairo_show_image;
+	self->get_text_extents         = av_graphics_cairo_get_text_extents;
+	self->set_font_face            = av_graphics_cairo_set_font_face;
+	self->set_font_size            = av_graphics_cairo_set_font_size;
 
 	return AV_OK;
 }
@@ -1049,7 +1031,6 @@ AV_API av_result_t av_graphics_cairo_register_oop(av_oop_p oop)
 	if (AV_OK != (rc = oop->define_class(oop, "graphics_cairo", "graphics", sizeof(av_graphics_t),
 		av_graphics_cairo_constructor, av_graphics_cairo_destructor)))
 		return rc;
-
 
 	if (AV_OK != (rc = oop->new(oop, "graphics_cairo", (av_object_p*)&graphics)))
 		return rc;

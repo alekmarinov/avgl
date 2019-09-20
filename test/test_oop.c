@@ -88,7 +88,7 @@ int test_oop_inheritance()
 	oop->new(oop, "boo", (av_object_p*)&boo);
 	boo->do_boolish(boo);
 	status = boo->invoked == 1 && boo->foo.invoked == 0;
-	O_destroy(boo);
+	O_release(boo);
 	oop->destroy(oop);
 	return status;
 }

@@ -80,7 +80,7 @@ static av_result_t av_timer_sdl_add_timer(av_timer_p self,
 	tinfo->timer_id              = ctx->id_gen++;
 	if (AV_OK != (rc = ctx->timers->push_last(ctx->timers, tinfo)))
 	{
-		free(tinfo);
+		av_free(tinfo);
 		return rc;
 	}
 
@@ -98,7 +98,7 @@ static av_result_t av_timer_sdl_remove_timer(av_timer_p self, int timer_id)
 		if (timer_id == timer_info->timer_id)
 		{
 			SDL_RemoveTimer(timer_info->sdl_timer_id);
-			free(timer_info);
+			av_free(timer_info);
 			ctx->timers->remove(ctx->timers);
 			return AV_OK;
 		}
@@ -126,10 +126,10 @@ static void av_timer_sdl_destructor(void* pobject)
 	{
 		av_timer_info_p timer_info = (av_timer_info_p)ctx->timers->get(ctx->timers);
 		SDL_RemoveTimer(timer_info->sdl_timer_id);
-		free(timer_info);
+		av_free(timer_info);
 	}
 	ctx->timers->destroy(ctx->timers);
-	free(ctx);
+	av_free(ctx);
 }
 
 /* Returns current time since computer started in ms */
@@ -149,7 +149,7 @@ static av_result_t av_timer_sdl_constructor(av_object_p pobject)
 
 	if (AV_OK != (rc = av_list_create(&ctx->timers)))
 	{
-		free(ctx);
+		av_free(ctx);
 		return rc;
 	}
 	ctx->id_gen = 1;

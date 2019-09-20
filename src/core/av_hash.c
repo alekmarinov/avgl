@@ -76,11 +76,11 @@ static av_result_t hash_grow(av_hash_p self)
 		if (old_recs[i].hash && old_recs[i].key)
 		{
 			self->add(self, old_recs[i].key, old_recs[i].value);
-			free(old_recs[i].key);
+			av_free(old_recs[i].key);
 		}
 	}
 	
-	free(old_recs);
+	av_free(old_recs);
 	
 	return AV_OK;
 }
@@ -193,7 +193,7 @@ static void* av_hash_remove(av_hash_p self, const char* key)
 		{
 			/* do not erase hash, so probes for collisions succeed */
 			value = recs[ind].value;
-			free(recs[ind].key);
+			av_free(recs[ind].key);
 			recs[ind].key = 0;
 			recs[ind].value = 0;
 			h->records_count--;
@@ -229,13 +229,13 @@ static void av_hash_destroy(av_hash_p self)
 	records_size = sizes[h->size_index];
 	for (i=0; i < records_size; i++)
 		if (h->records[i].key)
-			free(h->records[i].key);
+			av_free(h->records[i].key);
 
-	free(h->records);
+	av_free(h->records);
 	av_assert(AV_OK == h->mutex->unlock(h->mutex), "unable to unlock the hash mutex");
 	h->mutex->destroy(h->mutex);
-	free(h);
-	free(self);
+	av_free(h);
+	av_free(self);
 }
 
 static void av_hash_first(av_hash_p self)
@@ -276,7 +276,7 @@ av_result_t av_hash_create(unsigned int capacity, av_hash_p *pphash)
 	
 	if (0 == (h = (struct hash *)av_malloc(sizeof(struct hash))))
 	{
-		free(self);
+		av_free(self);
 		return AV_EMEM;
 	}
 	
@@ -291,8 +291,8 @@ av_result_t av_hash_create(unsigned int capacity, av_hash_p *pphash)
 	
 	if (0 == (h->records = calloc(sizes[sind], sizeof(struct record))))
 	{
-		free(h);
-		free(self);
+		av_free(h);
+		av_free(self);
 		return AV_EMEM;
 	}
 
@@ -301,9 +301,9 @@ av_result_t av_hash_create(unsigned int capacity, av_hash_p *pphash)
 
 	if (AV_OK != (rc = av_rwmutex_create(&h->mutex)))
 	{
-		free(h->records);
-		free(h);
-		free(self);
+		av_free(h->records);
+		av_free(h);
+		av_free(self);
 		return rc;
 	}
 

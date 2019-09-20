@@ -36,7 +36,7 @@ static av_bool_t on_draw(av_visible_p self, av_graphics_p graphics)
 	graphics->move_to(graphics, 0, 1.5);
 	snprintf(buf, 1024, "%dx%d at %d,%d", absrect.w, absrect.h, absrect.x, absrect.y);
 	graphics->get_text_extents(graphics, buf, &tw, &th, AV_NULL, AV_NULL, AV_NULL, AV_NULL);
-	graphics->set_font_size(graphics, 1.5);
+	graphics->set_font_size(graphics, 2);
 //	graphics->set_scale(graphics, 10, 10);
 	graphics->text_path(graphics, buf);
 	graphics->set_color_rgba(graphics, 1-(double)r/255, 1-(double)g/255, 1-(double)b/255, 1);
@@ -152,17 +152,16 @@ av_visible_p new_window(av_visible_p parent, int x, int y, int w, int h)
 	av_window_p window;
 	av_rect_t rect;
 	parent->create_child(parent, "visible", &child);
-	child->on_draw = on_draw;
 	window = (av_window_p)child;
+	av_rect_init(&rect, x, y, w, h);
+	window->set_rect(window, &rect);
+	child->on_draw = on_draw;
 	window->set_hover_delay(window, 0);
 	window->on_mouse_move        = on_mouse_move;
 	window->on_mouse_button_down = on_mouse_button_down;
 	window->on_mouse_button_up   = on_mouse_button_up;
 	window->on_mouse_enter       = on_mouse_enter;
 	window->on_mouse_hover       = on_mouse_hover;
-	av_rect_init(&rect, x, y, w, h);
-	window->set_rect(window, &rect);
-	child->draw(child);
 	return child;
 }
 

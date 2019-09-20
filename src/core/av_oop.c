@@ -11,14 +11,10 @@
 
 #include <av_oop.h>
 #include "av_stdc.h"
-#include "av_debug.h"
 
 /* the class names of avgl base classes */
 static const char* object_class_name = "object";
 static const char* service_class_name = "service";
-
-// FiXME: shut dbg messages
-// #define av_dbg(x, ...)
 
 /* av_object_t implementation */
 /* --------------------------- */
@@ -128,31 +124,15 @@ static void av_object_destructor(av_object_p self)
 	free(self);
 }
 
-/* Object constructor */
-static av_result_t av_object_constructor(av_object_p self)
-{
-	av_dbg("av_object_constructor %p\n", self);
-	self->attributes = AV_NULL;
-	self->is_a = av_object_is_a;
-	self->tostring = av_object_tostring;
-	self->set_attribute = av_object_set_attribute;
-	self->get_attribute = av_object_get_attribute;
-	self->dump_attributes = av_object_dump_attributes;
-	self->destroy = av_object_destructor;
-	return AV_OK;
-}
-
-/* Service class implementation */
-/* --------------------------- */
-
 /* Increment reference counter */
-static void av_service_addref(av_service_p self)
+static av_object_p av_object_addref(av_object_p self)
 {
 	self->refcnt++;
+	return self;
 }
 
 /* Decrement reference counter and destroy the object when reaches 0 */
-static void av_service_release(av_service_p self)
+static void av_object_release(av_object_p self)
 {
 	if (0 == --(self->refcnt))
 	{
@@ -160,15 +140,32 @@ static void av_service_release(av_service_p self)
 	}
 }
 
+/* Object constructor */
+static av_result_t av_object_constructor(av_object_p self)
+{
+	av_dbg("av_object_constructor %p\n", self);
+	self->attributes = AV_NULL;
+	self->refcnt = 1;
+	self->is_a = av_object_is_a;
+	self->tostring = av_object_tostring;
+	self->set_attribute = av_object_set_attribute;
+	self->get_attribute = av_object_get_attribute;
+	self->dump_attributes = av_object_dump_attributes;
+	self->destroy = av_object_destructor;
+	self->addref = av_object_addref;
+	self->release = av_object_release;
+	return AV_OK;
+}
+
+/* Service class implementation */
+/* --------------------------- */
+
 /* Initializes memory given by the object argument with a service class information */
 static av_result_t av_service_constructor(av_object_p object)
 {
 	av_dbg("av_service_constructor: %p\n", object);
 	av_service_p self = (av_service_p)object;
 	self->name[0] = '\0';
-	self->refcnt = 0;
-	self->addref = av_service_addref;
-	self->release = av_service_release;
 	return AV_OK;
 }
 
@@ -262,7 +259,7 @@ static av_result_t av_oop_register_service(av_oop_p self, const char* servicenam
 		return AV_OK;
 	}
 
-	/* add the new service to service repository hashtable */
+	/* add the new service to service repository map */
 	if (AV_OK != (rc = self->servicemap->add(self->servicemap, servicename, service)))
 	{
 		return rc;
@@ -279,20 +276,19 @@ static av_result_t av_oop_register_service(av_oop_p self, const char* servicenam
 }
 
 /* Creates new reference to a service with a given name */
-static av_result_t av_oop_service_ref(av_oop_p self, const char* servicename, av_service_p* ppservice)
+static av_result_t av_oop_get_service(av_oop_p self, const char* servicename, av_service_p* ppservice)
 {
 	av_service_p service;
 	av_assert(servicename, "NULL service name is not allowed");
 
 	if (AV_NULL == (service = self->servicemap->get(self->servicemap, servicename)))
 	{
-		av_dbg("av_oop_service_ref: Service %s not found\n", servicename);
+		av_dbg("av_oop_get_service: Service %s not found\n", servicename);
 		/* service not found */
 		return AV_EFOUND;
 	}
 
 	*ppservice = service;
-	service->addref(service);
 	return AV_OK;
 }
 
@@ -324,6 +320,7 @@ static av_result_t av_oop_new(av_oop_p self, const char* classname, av_object_p*
 		free(object);
 		return rc;
 	}
+
 	while (classref)
 	{
 		parentslist->push_last(parentslist, classref);
@@ -350,13 +347,13 @@ static av_result_t av_oop_new(av_oop_p self, const char* classname, av_object_p*
 static void av_oop_destroy(av_oop_p self)
 {
 	av_dbg("av_oop_destroy\n");
-	self->services->iterate_all(self->services, free, AV_FALSE);
-	self->classes->iterate_all(self->classes, free, AV_FALSE);
+	self->services->iterate_all(self->services, av_free, AV_FALSE);
+	self->classes->iterate_all(self->classes, av_free, AV_FALSE);
 	self->services->destroy(self->services);
 	self->classes->destroy(self->classes);
 	self->servicemap->destroy(self->servicemap);
 	self->classmap->destroy(self->classmap);
-	free(self);
+	av_free(self);
 }
 
 av_result_t av_oop_create(av_oop_p* pself)
@@ -370,7 +367,7 @@ av_result_t av_oop_create(av_oop_p* pself)
 	/* creates class repository hashtable */
 	if (AV_OK != (rc = av_hash_create(AV_HASH_CAPACITY_MEDIUM, &self->classmap)))
 	{
-		free(self);
+		av_free(self);
 		return rc;
 	}
 
@@ -378,7 +375,7 @@ av_result_t av_oop_create(av_oop_p* pself)
 	if (AV_OK != (rc = av_list_create(&self->classes)))
 	{
 		O_destroy(self->classmap);
-		free(self);
+		av_free(self);
 		return rc;
 	}
 
@@ -387,7 +384,7 @@ av_result_t av_oop_create(av_oop_p* pself)
 	{
 		O_destroy(self->classmap);
 		O_destroy(self->classes);
-		free(self);
+		av_free(self);
 		return rc;
 	}
 
@@ -397,14 +394,14 @@ av_result_t av_oop_create(av_oop_p* pself)
 		O_destroy(self->servicemap);
 		O_destroy(self->classmap);
 		O_destroy(self->classes);
-		free(self);
+		av_free(self);
 		return AV_EMEM;
 	}
 
 	self->define_class     = av_oop_define_class;
 	self->new              = av_oop_new;
 	self->register_service = av_oop_register_service;
-	self->service_ref      = av_oop_service_ref;
+	self->get_service      = av_oop_get_service;
 	self->destroy          = av_oop_destroy;
 
 	/* register base classes */

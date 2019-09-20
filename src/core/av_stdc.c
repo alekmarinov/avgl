@@ -10,7 +10,11 @@
 
 #ifdef _MSC_VER
 # define _CRT_SECURE_NO_WARNINGS
+# if defined(WIN32) || defined(WIN64)
+# define strcasecmp _stricmp
+# endif
 #endif
+
 #include <stdlib.h>  
 #include <string.h>  
 #include <av_stdc.h> 
@@ -33,6 +37,11 @@ void av_memcpy(unsigned char* dst, unsigned char* src, int size)
 int av_strcmp(const char* str1, const char* str2)
 {
 	return strcmp(str1, str2);
+}
+
+int av_strcasecmp(const char* str1, const char* str2)
+{
+	return strcasecmp(str1, str2);
 }
 
 char* av_strdup(const char* str)

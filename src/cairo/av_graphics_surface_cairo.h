@@ -12,8 +12,9 @@
 #ifndef __AV_GRAPHICS_SURFACE_CAIRO_H
 #define __AV_GRAPHICS_SURFACE_CAIRO_H
 
-#include <av_graphics.h>
 #include <av_oop.h>
+#include <av_graphics.h>
+#include "av_graphics_cairo.h"
 
 av_result_t av_graphics_surface_cairo_register_oop(av_oop_p);
 

@@ -9,7 +9,6 @@
 /*********************************************************************/
 
 #include <avgl.h>
-#include <av_debug.h>
 
 av_result_t av_window_set_rect(av_window_p self, av_rect_p newrect);
 
@@ -56,7 +55,7 @@ static av_result_t av_visible_on_invalidate(struct av_window* _self, av_rect_p r
 	return self->system->invalidate_rect(self->system, rect);
 }
 
-static void av_visible_set_surface(struct _av_visible_t* visible, av_surface_p surface)
+static void av_visible_set_surface(av_visible_t* visible, av_surface_p surface)
 {
 	av_visible_p self = (av_visible_p)visible;
 	av_window_p window = (av_window_p)visible;
@@ -64,7 +63,7 @@ static void av_visible_set_surface(struct _av_visible_t* visible, av_surface_p s
 	av_rect_t rect;
 	av_dbg("av_visible_set_surface: %p -> %p\n", self, surface);
 
-	if (self->surface)
+	if (self->surface && self->surface != surface)
 	{
 		O_destroy(self->surface);
 		self->surface = AV_NULL;
@@ -130,15 +129,20 @@ av_result_t av_visible_create_child(struct _av_visible_t* _self, const char* cla
 
 	if ( !O_is_a(visible, "visible"))
 	{
-		O_destroy(visible);
+		O_release(visible);
 		return AV_EARG;
 	}
 
-	visible->system = self->system;
+	visible->system = (av_system_p)O_addref(self->system);
 	if (AV_OK != (rc = ((av_window_p)visible)->set_parent((av_window_p)visible, (av_window_p)self)))
 	{
-		O_destroy(visible);
+		O_release(visible);
 		return rc;
+	}
+	if (visible->surface)
+	{
+		visible->is_owner_draw = AV_FALSE;
+		visible->set_surface(visible, visible->surface);
 	}
 	*pvisible = visible;
 	return AV_OK;

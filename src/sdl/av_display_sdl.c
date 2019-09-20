@@ -15,7 +15,6 @@
 #include "av_display_sdl.h"
 #include "av_surface_sdl.h"
 #include "av_display_cursor_sdl.h"
-#include "av_debug.h"
 #include "av_core_sdl.h"
 #include <SDL_mouse.h>
 

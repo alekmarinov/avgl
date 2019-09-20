@@ -75,9 +75,23 @@ static av_result_t av_graphics_surface_cairo_create_pattern(av_graphics_surface_
 	return AV_OK;
 }
 
+/* Writes surface to file */
+static av_result_t av_graphics_surface_save(av_graphics_surface_p self,
+	                                        const char* filename)
+{
+	cairo_surface_t* cairo_surface = O_context(self);
+	AV_UNUSED(self);
+
+	/* FIXME: What file format? */
+	return av_cairo_error_check("cairo_surface_write_to_png", cairo_surface_write_to_png(cairo_surface, filename));
+}
+
 static void av_graphics_surface_cairo_destructor(av_object_p self)
 {
 	cairo_surface_t* cairo_surface = O_context(self);
+	av_graphics_surface_p graphics_surface = (av_graphics_surface_p)self;
+	if (graphics_surface->graphics)
+		O_release(graphics_surface->graphics);
 
 	if (cairo_surface)
 		cairo_surface_destroy(cairo_surface);
@@ -92,6 +106,7 @@ static av_result_t av_graphics_surface_cairo_constructor(av_object_p object)
 	self->lock       = av_graphics_surface_cairo_lock;
 	self->unlock     = av_graphics_surface_cairo_unlock;
 	((av_graphics_surface_p)self)->create_pattern = av_graphics_surface_cairo_create_pattern;
+	((av_graphics_surface_p)self)->save = av_graphics_surface_save;
 	return AV_OK;
 }
 

@@ -8,6 +8,7 @@
 /*                                                                   */
 /*********************************************************************/
 
+#include <av_oop.h>
 #include <av_display.h>
 #include <av_graphics.h>
 #include <av_prefs.h>
@@ -416,7 +417,7 @@ static av_result_t av_graphics_get_text_extents(av_graphics_p self,
 	return AV_ESUPPORTED;
 }
 
-static av_result_t av_graphics_select_font_face(av_graphics_p self, const char* fontface, av_font_slant_t slant, av_font_weight_t weight)
+static av_result_t av_graphics_set_font_face(av_graphics_p self, const char* fontface, av_font_slant_t slant, av_font_weight_t weight)
 {
 	AV_UNUSED(self);
 	AV_UNUSED(fontface);
@@ -432,7 +433,7 @@ static av_result_t av_graphics_set_font_size(av_graphics_p self, int size)
 	return AV_ESUPPORTED;
 }
 
-static void av_graphics_destructor(void* pobject)
+static void av_graphics_destructor(av_object_t* pobject)
 {
 	AV_UNUSED(pobject);
 }
@@ -448,7 +449,6 @@ static av_result_t av_graphics_constructor(av_object_p pobject)
 	self->create_surface      = av_graphics_create_surface;
 	self->create_surface_from_data = av_graphics_create_surface_from_data;
 	self->create_surface_from_file = av_graphics_create_surface_from_file;
-	self->save_surface_file   = av_graphics_save_surface_file;
 	self->begin               = av_graphics_begin;
 	self->get_target_surface  = av_graphics_get_target_surface;
 	self->end                 = av_graphics_end;
@@ -480,7 +480,7 @@ static av_result_t av_graphics_constructor(av_object_p pobject)
 	self->show_text           = av_graphics_show_text;
 	self->show_image          = av_graphics_show_image;
 	self->get_text_extents    = av_graphics_get_text_extents;
-	self->select_font_face    = av_graphics_select_font_face;
+	self->set_font_face       = av_graphics_set_font_face;
 	self->set_font_size       = av_graphics_set_font_size;
 
 	return AV_OK;

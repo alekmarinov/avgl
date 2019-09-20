@@ -3,6 +3,7 @@ find_package(Threads)
 find_package(Cairo REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(SDL2Image REQUIRED)
+find_package(Lua)
 
 if (CAIRO_FOUND)
     set(cairo_sources
@@ -27,12 +28,18 @@ if (SDL2_FOUND)
     ADD_DEFINITIONS(-DWITH_SYSTEM_SDL)
 endif()
 
+if (LUA_FOUND)
+    set(lua_sources
+        lua/lavgl.c
+    )
+    ADD_DEFINITIONS(-DWITH_LUA)
+endif()
+
 set(core_sources
     core/av_hash.c
     core/av_list.c
     core/av_log.c
     core/av_oop.c
-    # core/av_prefs.c
     core/av_stdc.c
     core/av_thread.c
     core/av_tree.c
@@ -62,6 +69,7 @@ set(sources
     ${core_sources}
     ${cairo_sources}
     ${sdl_sources}
+    ${lua_sources}
 )
 
 add_library(avgl SHARED ${sources})
@@ -70,6 +78,7 @@ target_include_directories(avgl
     PRIVATE ${AVGL_SOURCE_DIR}
     PRIVATE ${CAIRO_INCLUDE_DIRS}
     PRIVATE ${SDL2_INCLUDE_DIRS}
+    PRIVATE ${LUA_INCLUDE_DIR}
 )
 
 target_link_libraries (avgl
@@ -78,4 +87,5 @@ target_link_libraries (avgl
     PUBLIC ${CAIRO_LIBRARIES}    
     PUBLIC ${SDL2_LIBRARIES}
     PUBLIC ${SDL2IMAGE_LIBRARIES}
+    PUBLIC ${LUA_LIBRARIES}
 )

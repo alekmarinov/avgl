@@ -49,14 +49,12 @@ extern "C" {
 *          av_assert macros are defined empty and the macro NDEBUG is defined
 */
 
-#define AV_DEBUG
-
 #ifdef AV_DEBUG
-#  include <stdio.h>
-#  include <stdlib.h>
+#  define av_dbg(...) { fprintf(stderr, "%s:%d ", __FILE__, __LINE__); fprintf(stderr, __VA_ARGS__);  }
 #  define av_assert(exp, msg) if (!(exp)) \
   { fprintf(stderr, "%s:%d assertion %s FAILED - %s\n", __FILE__, __LINE__, #exp, msg); exit(1); }
 #else
+#  define av_dbg(...)
 #  define av_assert(exp, msg)
 #  ifndef NDEBUG
 #    define NDEBUG
@@ -64,7 +62,7 @@ extern "C" {
 #endif
 
 /*!
-* \brief Enable multithreading support.
+* \brief Enable multi-threading
 *
 * When the macro is not defined the thread module is undefined except 
 * av_mutex and av_rwmutex classes which are defined but empty
@@ -237,6 +235,8 @@ typedef enum
 	AV_FALSE = 0,
 	AV_TRUE = 1
 } av_bool_t;
+
+#define AV_BOOL(b) ((b) ? AV_TRUE : AV_FALSE)
 
 /*!	
 * Value for no value

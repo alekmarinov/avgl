@@ -182,6 +182,18 @@ typedef struct av_graphics_surface
 	av_result_t (*create_pattern)(struct av_graphics_surface* self,
 								  av_graphics_pattern_p* ppattern);
 
+	/*!
+	* \brief Writes graphics surface to file
+	* \param self is a reference to this object
+	* \param graphicssurface result graphics surface object
+	* \param filename is the name of image to create from the given surface
+	* \return av_result_t
+	*         - AV_OK on success
+	*         - != AV_OK on failure
+	*/
+	av_result_t (*save)(struct av_graphics_surface* self,
+		const char* filename);
+
 } av_graphics_surface_t, *av_graphics_surface_p;
 
 /*!
@@ -240,19 +252,6 @@ typedef struct av_graphics
 	av_result_t (*create_surface_from_file)(struct av_graphics* self,
 									        const char* filename,
 									        av_graphics_surface_p* ppgraphicssurface);
-
-	/*!
-	* \brief Writes graphics surface to file
-	* \param self is a reference to this object
-	* \param graphicssurface result graphics surface object
-	* \param filename is the name of image to create from the given surface
-	* \return av_result_t
-	*         - AV_OK on success
-	*         - != AV_OK on failure
-	*/
-	av_result_t (*save_surface_file)(struct av_graphics* self,
-									 av_graphics_surface_p graphicssurface,
-									 const char* filename);
 
 	/*!
 	* \brief Setup drawing environment over a target graphics surface
@@ -712,7 +711,7 @@ typedef struct av_graphics
 									   int* pxadvance,
 									   int* pyadvance);
 
-	av_result_t (*select_font_face)   (struct av_graphics* self, const char* fontface, av_font_slant_t slant, av_font_weight_t weight);
+	av_result_t (*set_font_face)      (struct av_graphics* self, const char* fontface, av_font_slant_t slant, av_font_weight_t weight);
 	av_result_t (*set_font_size)      (struct av_graphics* self, int size);
 
 } av_graphics_t, *av_graphics_p;

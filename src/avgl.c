@@ -41,16 +41,20 @@ av_bool_t avgl_step()
 
 void avgl_destroy()
 {
+	av_visible_p main_visible;
 	for (avgl.oop->services->first(avgl.oop->services);
 		avgl.oop->services->has_more(avgl.oop->services);
 		avgl.oop->services->next(avgl.oop->services))
 	{
 		char* name = avgl.oop->services->get(avgl.oop->services);
 		av_service_p service = avgl.oop->servicemap->get(avgl.oop->servicemap, name);
-		if (service->refcnt > 1)
-			avgl.log->warn(avgl.log, "Service %s have %d unreleased references", name, service->refcnt - 1);
+		if (((av_object_p)service)->refcnt > 1)
+			avgl.log->warn(avgl.log, "Service %s have %d unreleased references", name, ((av_object_p)service)->refcnt - 1);
 	}
 
+	main_visible = avgl.system->get_root_visible(avgl.system);
+	if (main_visible)
+		O_release(main_visible);
 	O_release(avgl.system);
 	O_release(avgl.log);
 	avgl.oop->destroy(avgl.oop);
@@ -73,14 +77,14 @@ av_visible_p avgl_create(av_display_config_p pdc)
 
 	/* Initialize logging */
 	av_log_register_oop(avgl.oop);
-	avgl.oop->service_ref(avgl.oop, "log", (av_service_p*)&avgl.log);
+	avgl.oop->get_service(avgl.oop, "log", (av_service_p*)&avgl.log);
 	avgl.log->add_console_logger(avgl.log, LOG_VERBOSITY_DEBUG, "console");
 	avgl.log->info(avgl.log, "AVGL is initializing...");
 
 	/* Initialize system */
 	av_graphics_cairo_register_oop(avgl.oop);
 	av_system_sdl_register_oop(avgl.oop);
-	avgl.oop->service_ref(avgl.oop, "system", (av_service_p*)&avgl.system);
+	avgl.oop->get_service(avgl.oop, "system", (av_service_p*)&avgl.system);
 
 	av_sprite_register_oop(avgl.oop);
 
@@ -139,7 +143,7 @@ av_bitmap_p avgl_load_bitmap(const char* filename)
 
 	if (AV_OK != (rc = bitmap->load(bitmap, filename)))
 	{
-		O_destroy(bitmap);
+		O_release(bitmap);
 		avgl.last_error = rc;
 		return AV_NULL;
 	}
@@ -157,15 +161,15 @@ av_surface_p avgl_load_surface(const char* filename)
 
 	if (AV_OK != (rc = avgl.system->display->create_surface(avgl.system->display, &surface)))
 	{
-		O_destroy(bitmap);
+		O_release(bitmap);
 		avgl.last_error = rc;
 		return AV_NULL;
 	}
 
 	if (AV_OK != (rc = surface->set_bitmap(surface, bitmap)))
 	{
-		O_destroy(surface);
-		O_destroy(bitmap);
+		O_release(surface);
+		O_release(bitmap);
 		avgl.last_error = rc;
 		return AV_NULL;
 	}

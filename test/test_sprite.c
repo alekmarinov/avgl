@@ -1,3 +1,5 @@
+
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <avgl.h>
 
@@ -29,8 +31,8 @@ av_bool_t sprite_timer(void* arg)
 }
 
 
-int girl_dx = 4;
-int girl_dy = 4;
+int girl_dx = 40;
+int girl_dy = 40;
 av_bool_t girl_move_timer(void* arg)
 {
 	av_rect_t rect;
@@ -55,6 +57,7 @@ av_bool_t girl_move_timer(void* arg)
 
 int test_sprite()
 {
+	int a;
 	av_surface_p explosion_surface = AV_NULL;
 	av_surface_p girl_surface = AV_NULL;
 	av_visible_p main = avgl_create(AV_NULL);
@@ -82,9 +85,11 @@ int test_sprite()
 	rect.h = girl_height;
 	((av_window_p)sprite)->set_rect((av_window_p)sprite, &rect);
 	sprite->set_sequence(sprite, seq_girl, 6, 700, AV_TRUE);
-	system->timer->add_timer(system->timer, girl_move_timer, 20, sprite, AV_NULL);
 
-	for (int i = 0; i < 50; i++)
+	/*
+	system->timer->add_timer(system->timer, girl_move_timer, 200, sprite, AV_NULL);
+
+	for (int i = 0; i < 10; i++)
 	{
 		rect.x = (int)((float)1000 * RAND);
 		rect.y = (int)((float)1000 * RAND);
@@ -95,7 +100,7 @@ int test_sprite()
 		rect.h = explosion_height;
 		((av_window_p)sprite)->set_rect((av_window_p)sprite, &rect);
 		system->timer->add_timer(system->timer, sprite_timer, (int)((float)2000 * RAND), sprite, AV_NULL);
-	}
+	}*/
 
 
 	avgl_loop();
@@ -103,6 +108,7 @@ quit:
 	if (explosion_surface) O_destroy(explosion_surface);
 	if (girl_surface) O_destroy(girl_surface);
 	avgl_destroy();
-
+	printf("Exiting\n");
+	scanf("%d\n", &a);
 	return 1;
 }

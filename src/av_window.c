@@ -90,6 +90,7 @@ static av_result_t av_window_add_child(av_window_p self, av_window_p child, av_b
 	/* add child to self children */
 	rc = (istop ? ctx->children->push_last(ctx->children, child)
 				: ctx->children->push_first(ctx->children, child));
+	O_addref(child);
 
 	if (AV_OK == rc)
 	{
@@ -139,8 +140,8 @@ static av_bool_t av_window_remove_child(av_window_p self, av_window_p child)
 	av_assert(child == ctx->children->get(ctx->children), "child is not found between children of its parent");
 
 	ctx->children->remove(ctx->children);
+	O_release(child);
 	cctx->parent = AV_NULL; /* removed child has no parent */
-
 	return AV_TRUE;
 }
 
@@ -217,7 +218,7 @@ static av_result_t av_window_raise_lower(av_window_p self, av_bool_t israise)
 			rc = parent->add_child_top(parent, self);
 		else
 			rc = parent->add_child_bottom(parent, self);
-		
+
 		if (AV_OK == rc)
 		{
 			av_rect_t rect;
@@ -273,10 +274,10 @@ static void av_window_destructor(struct _av_object_t* pobject)
 		av_window_p child;
 		children->last(children);
 		child = (av_window_p)children->get(children);
-		O_destroy(child);
+		O_release(child);
 	}
 	children->destroy(children);
-	free(ctx);
+	av_free(ctx);
 }
 
 /* Windows managment algorithms */
@@ -631,7 +632,7 @@ static av_result_t av_window_constructor(av_object_p object)
 	ctx->visible                = AV_TRUE; /* invisible by default */
 	ctx->clip_children          = AV_TRUE; /* clip children by default */
 	self->origin_x              = self->origin_y = 0;
-	self->hover_delay           = 0;
+	self->hover_delay           = 1000;
 	self->cursor                = AV_DISPLAY_CURSOR_DEFAULT;
 	self->cursor_visible        = AV_TRUE;
 	self->bubble_events         = AV_TRUE;
@@ -668,21 +669,20 @@ static av_result_t av_window_constructor(av_object_p object)
 	self->is_bubble_events      = av_window_is_bubble_events;
 	self->set_handle_events     = av_window_set_handle_events;
 	self->is_handle_events      = av_window_is_handle_events;
-	self->on_event             = av_window_on_event;
-	self->on_mouse_move        = av_window_on_mouse;
-	self->on_mouse_enter       = av_window_on_mouse;
-	self->on_mouse_hover       = av_window_on_mouse;
-	self->on_mouse_leave       = av_window_on_mouse;
-	self->on_mouse_button_up   = av_window_on_mouse_button;
-	self->on_mouse_button_down = av_window_on_mouse_button;
-	self->on_key_up            = av_window_on_key;
-	self->on_key_down          = av_window_on_key;
-	self->on_focus             = av_window_on_focus;
-	self->on_user              = av_window_on_user;
-	self->on_paint             = av_window_on_paint;
-	self->on_invalidate        = av_window_on_invalidate;
-	self->invalidate = av_window_invalidate;
-
+	self->on_event              = av_window_on_event;
+	self->on_mouse_move         = av_window_on_mouse;
+	self->on_mouse_enter        = av_window_on_mouse;
+	self->on_mouse_hover        = av_window_on_mouse;
+	self->on_mouse_leave        = av_window_on_mouse;
+	self->on_mouse_button_up    = av_window_on_mouse_button;
+	self->on_mouse_button_down  = av_window_on_mouse_button;
+	self->on_key_up             = av_window_on_key;
+	self->on_key_down           = av_window_on_key;
+	self->on_focus              = av_window_on_focus;
+	self->on_user               = av_window_on_user;
+	self->on_paint              = av_window_on_paint;
+	self->on_invalidate         = av_window_on_invalidate;
+	self->invalidate            = av_window_invalidate;
 	return AV_OK;
 }
 

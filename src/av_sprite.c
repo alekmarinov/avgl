@@ -9,7 +9,6 @@
 
 #include <av_sprite.h>
 #include <av_stdc.h>
-#include <av_debug.h>
 
 typedef struct _sprite_ctx_t
 {
@@ -139,7 +138,7 @@ static void av_sprite_on_tick(struct _av_visible_t* _self)
 	}
 }
 
-static void av_sprite_destructor(void* _self)
+static void av_sprite_destructor(av_object_t* _self)
 {
 	sprite_ctx_p ctx = O_context(_self);
 	if (ctx->sequence) av_free(ctx->sequence);

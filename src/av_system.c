@@ -9,7 +9,6 @@
 /*********************************************************************/
 
 #include <avgl.h>
-#include <av_debug.h>
 
 typedef struct _system_ctx_t
 {
@@ -89,6 +88,23 @@ static void tick_recurse(av_visible_p visible)
 	for (children->first(children); children->has_more(children); children->next(children))
 	{
 		tick_recurse((av_visible_p)children->get(children));
+	}
+}
+
+static void draw_recurse(av_visible_p visible)
+{
+	av_list_p children;
+	if (!visible)
+		return;
+	if (visible->on_draw && visible->is_owner_draw)
+	{
+		visible->draw(visible);
+	}
+
+	children = ((av_window_p)visible)->get_children((av_window_p)visible);
+	for (children->first(children); children->has_more(children); children->next(children))
+	{
+		draw_recurse((av_visible_p)children->get(children));
 	}
 }
 
@@ -359,7 +375,7 @@ static av_bool_t av_system_step(av_system_p self)
 		}
 	}
 
-	// av_event_dbg(&event);
+	av_event_dbg(&event);
 
 	if (ctx->root)
 		render_recurse(self, ctx->root);
@@ -379,6 +395,7 @@ static av_bool_t av_system_step(av_system_p self)
 
 static void av_system_loop(av_system_p self)
 {
+	draw_recurse(self->get_root_visible(self));
 	while (self->step(self))
 		self->timer->sleep_ms(10);
 }
@@ -393,8 +410,8 @@ static void av_system_set_root_visible(struct _av_system_t* self, av_visible_p r
 {
 	system_ctx_p ctx = O_context(self);
 	if (ctx->root)
-		O_destroy(ctx->root);
-	ctx->root = root;
+		O_release(ctx->root);
+	ctx->root = (av_visible_p)O_addref(root);
 }
 
 static av_result_t av_system_create_bitmap(struct _av_system_t* self, av_bitmap_p* pbitmap)
@@ -452,18 +469,19 @@ static av_result_t av_system_initialize(struct _av_system_t* _self, av_display_c
 	oop = ((av_object_p)self)->classref->oop;
 	if (AV_OK != (rc = oop->new(oop, "visible", (av_object_p*)&ctx->root)))
 		return rc;
-	ctx->root->system = self;
+	ctx->root->system = (av_system_p)O_addref(self);
+	ctx->focus = (av_window_p)ctx->root;
 	ctx->root->on_draw = av_visible_root_on_draw;
 	ctx->root->on_destroy = av_visible_root_on_destroy;
 	if (AV_OK != (rc = self->display->create_surface(self->display, &ctx->root->surface)))
 	{
-		O_destroy(ctx->root);
+		O_release(ctx->root);
 		return rc;
 	}
 
 	if (AV_OK != (rc = ((av_window_p)ctx->root)->set_rect((av_window_p)ctx->root, &root_rect)))
 	{
-		O_destroy(ctx->root);
+		O_release(ctx->root);
 		return rc;
 	}
 	return AV_OK;
@@ -475,7 +493,7 @@ static void av_system_destructor(void* psystem)
 	system_ctx_p ctx = O_context(self);
 
 	if (ctx->root)
-		O_destroy(ctx->root);
+		O_release(ctx->root);
 
 	ctx->invalid_rects->remove_all(ctx->invalid_rects, av_free);
 	ctx->invalid_rects->destroy(ctx->invalid_rects);
@@ -511,16 +529,16 @@ static av_result_t av_system_constructor(av_object_p object)
 
 	oop = object->classref->oop;
 	
-	if (AV_OK != (rc = oop->service_ref(oop, "display", (av_service_p *)&self->display)))
+	if (AV_OK != (rc = oop->get_service(oop, "display", (av_service_p *)&self->display)))
 		return rc;
 
-	if (AV_OK != (rc = oop->service_ref(oop, "graphics", (av_service_p *)&self->graphics)))
+	if (AV_OK != (rc = oop->get_service(oop, "graphics", (av_service_p *)&self->graphics)))
 		return rc;
 
-	if (AV_OK != (rc = oop->service_ref(oop, "input", (av_service_p *)&self->input)))
+	if (AV_OK != (rc = oop->get_service(oop, "input", (av_service_p *)&self->input)))
 		return rc;
 
-	if (AV_OK != (rc = oop->service_ref(oop, "timer", (av_service_p *)&self->timer)))
+	if (AV_OK != (rc = oop->get_service(oop, "timer", (av_service_p *)&self->timer)))
 		return rc;
 
 	self->step              = av_system_step;

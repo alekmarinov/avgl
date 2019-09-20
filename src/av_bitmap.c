@@ -11,7 +11,7 @@
 #include <av_bitmap.h>
 
 /* set bitmap width and height */
-static av_result_t av_bitmap_set_size(struct av_bitmap_t* self, int width, int height)
+static av_result_t av_bitmap_set_size(av_bitmap_t* self, int width, int height)
 {
 	AV_UNUSED(self);
 	AV_UNUSED(width);
@@ -20,7 +20,7 @@ static av_result_t av_bitmap_set_size(struct av_bitmap_t* self, int width, int h
 }
 
 /* get bitmap width and height */
-static av_result_t av_bitmap_get_size(struct av_bitmap_t* self, int* pwidth, int* pheight)
+static av_result_t av_bitmap_get_size(av_bitmap_t* self, int* pwidth, int* pheight)
 {
 	AV_UNUSED(self);
 	AV_UNUSED(pwidth);
@@ -28,7 +28,7 @@ static av_result_t av_bitmap_get_size(struct av_bitmap_t* self, int* pwidth, int
 	return AV_ESUPPORTED;
 }
 
-static av_result_t av_bitmap_load(struct av_bitmap_t* self, const char* filename)
+static av_result_t av_bitmap_load(av_bitmap_t* self, const char* filename)
 {
 	AV_UNUSED(self);
 	AV_UNUSED(filename);

@@ -252,7 +252,7 @@ static av_result_t av_log_debug(av_log_p self, const char* fmt, ...)
 	LOG_METHOD_IMPL(LOG_VERBOSITY_DEBUG)
 
 /*	Destroys log object */
-static void av_log_destructor(void* self)
+static void av_log_destructor(av_object_t* self)
 {
 	av_logger_p alogger = (av_logger_p)O_context(self);
 	av_logger_p plogger = 0;

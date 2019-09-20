@@ -29,8 +29,8 @@ int test_window_absolute()
 
 	dump_window(child);
 	dump_window(parent);
-	O_destroy(child);
-	O_destroy(parent);
+	O_release(child);
+	O_release(parent);
 	oop->destroy(oop);
 	return 1;
 }
