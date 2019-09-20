@@ -8,6 +8,7 @@
 --                                                                   --
 -----------------------------------------------------------------------
 
+local avgl = require "lavgl"
 local View = require "avgl.view.view"
 
 local Sprite = View("Sprite", {
@@ -16,18 +17,18 @@ local Sprite = View("Sprite", {
     loop = false
 })
 
-local function createsurface(self, system)
+local function createsurface(self)
     if not self.surface then
-        self.surface = assert(system:createsurface(self.image))
+        self.surface = assert(avgl.load_surface(self.image))
         if not self.width and not self.height then
-            self.width, self.height = surface:getsize()
+            self.width, self.height = self.surface:getsize()
         end
     end
 end
 
 function Sprite:oncreate(window)
     print("Sprite:oncreate")
-    createsurface(self, window:system())
+    createsurface(self)
     window:setsurface(self.surface)
     assert(window:setsize(self.width, self.height))
     if self.sequence then
@@ -36,7 +37,7 @@ function Sprite:oncreate(window)
 end
 
 function Sprite:getcontentsize()
-    createsurface(self, self.__window:system())
+    createsurface(self)
     return self.width, self.height
 end
 

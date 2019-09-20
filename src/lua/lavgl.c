@@ -1680,6 +1680,14 @@ static int lavgl_create(lua_State* L)
 	return 1;
 }
 
+
+static int lavgl_load_surface(lua_State* L)
+{
+	av_surface_p surface = avgl_load_surface(luaL_checkstring(L, 1));
+	new_lua_surface(L, surface);
+	return 1;
+}
+
 static int lavgl_loop(lua_State* L)
 {
 	avgl_loop();
@@ -1696,6 +1704,7 @@ static int lavgl_step(lua_State* L)
 static const struct luaL_Reg lavgl_funcs[] =
 {
 	{ "create", lavgl_create },
+	{ "load_surface", lavgl_load_surface },
 	{ "loop", lavgl_loop },
 	{ "step", lavgl_step },
 	{ AV_NULL, AV_NULL }

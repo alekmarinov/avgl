@@ -54,7 +54,7 @@ static void av_visible_root_on_draw(struct _av_visible_t* self, av_graphics_p gr
 	graphics->fill(graphics, AV_FALSE);
 	if (display_config.scale_x != 1 || display_config.scale_y != 1)
 	{
-		// draw grid
+		/* draw grid */
 		int x, y;
 		graphics->set_color_rgba(graphics, 1, 1, 1, 1);
 		for (x = 0; x < display_config.width; x++)

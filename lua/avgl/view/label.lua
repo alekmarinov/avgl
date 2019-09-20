@@ -7,7 +7,6 @@
 -- Description:   Label widget                                       --
 --                                                                   --
 -----------------------------------------------------------------------
-error('Label')
 
 local View = require "avgl.view.view"
 local DrawText = require "avgl.view._drawtext"
